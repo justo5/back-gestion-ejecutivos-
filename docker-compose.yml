@@ -1,0 +1,45 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: gestion-ejecutivos-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: gestion_ejecutivos
+    volumes:
+      - gestion-ejecutivos-db-data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    networks:
+      - gestion-ejecutivos-net
+
+  backend:
+    build: .
+    container_name: gestion-ejecutivos-backend
+    restart: unless-stopped
+    depends_on:
+      - postgres
+    environment:
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_USER: postgres
+      DB_PASSWORD: postgres
+      DB_NAME: gestion_ejecutivos
+      DB_SYNC: "true"
+      JWT_SECRET: change-me-in-production
+      ADMIN_EMAIL: admin@empresa.com
+      ADMIN_PASSWORD: admin123
+      PORT: 3000
+    ports:
+      - "3000:3000"
+    command: sh -c "node dist/seed/seed.js || true; node dist/main.js"
+    networks:
+      - gestion-ejecutivos-net
+
+volumes:
+  gestion-ejecutivos-db-data:
+
+networks:
+  gestion-ejecutivos-net:
+    external: true
