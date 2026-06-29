@@ -5,6 +5,7 @@ import { Client } from './client.entity';
 import { Cobro } from '../cobros/cobro.entity';
 import { AuthUser } from '../auth/current-user.decorator';
 import { UpdateCobroDto } from './dto/update-cobro.dto';
+import { CreateClientDto } from './dto/create-client.dto';
 
 @Injectable()
 export class ClientsService {
@@ -39,5 +40,32 @@ export class ClientsService {
     if (dto.paid !== undefined) cobro.paid = dto.paid;
     cobro.updatedAt = new Date();
     return this.cobrosRepo.save(cobro);
+  }
+
+  // Ejecutivos can only ever create clients under their own executiveId.
+  // Admins must pick a target executiveId, since they aren't tied to one
+  // themselves.
+  async createClient(dto: CreateClientDto, user: AuthUser) {
+    let executiveId: string;
+    if (user.role === 'admin') {
+      if (!dto.executiveId) {
+        throw new ForbiddenException('Tenés que elegir un ejecutivo para el cliente');
+      }
+      executiveId = dto.executiveId;
+    } else {
+      if (!user.executiveId) {
+        throw new ForbiddenException('Tu usuario no está asociado a un ejecutivo');
+      }
+      executiveId = user.executiveId;
+    }
+
+    const client = this.clientsRepo.create({
+      executiveId,
+      name: dto.name,
+      active: dto.active,
+      contactDay: dto.contactDay ?? null,
+      data: dto.data ?? {},
+    });
+    return this.clientsRepo.save(client);
   }
 }

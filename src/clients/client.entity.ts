@@ -21,7 +21,7 @@ export class Client {
   active: boolean;
 
   // Day of month the client is expected to be contacted/collected.
-  @Column({ nullable: true })
+  @Column({ type: 'int', nullable: true })
   contactDay: number | null;
 
   // Original spreadsheet row, columns vary by import, kept as-is for display.
