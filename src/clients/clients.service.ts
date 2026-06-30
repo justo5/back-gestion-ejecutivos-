@@ -62,10 +62,27 @@ export class ClientsService {
     const client = this.clientsRepo.create({
       executiveId,
       name: dto.name,
+      fanpage: dto.fanpage ?? null,
+      adAccount: dto.adAccount ?? null,
+      plan: dto.plan ?? null,
+      country: dto.country ?? null,
+      usd: dto.usd ?? null,
+      ars: dto.ars ?? null,
+      collectedBy: dto.collectedBy ?? null,
       active: dto.active,
       contactDay: dto.contactDay ?? null,
       data: dto.data ?? {},
     });
-    return this.clientsRepo.save(client);
+    const saved = await this.clientsRepo.save(client);
+
+    // Si el form eligió un plan del desplegable, se crea el cobro asociado
+    // apuntando a ese plan de configuración.
+    if (dto.planId != null) {
+      await this.cobrosRepo.save(
+        this.cobrosRepo.create({ clientId: saved.id, planId: dto.planId }),
+      );
+    }
+
+    return saved;
   }
 }

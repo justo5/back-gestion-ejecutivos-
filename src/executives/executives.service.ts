@@ -17,13 +17,19 @@ export class ExecutivesService {
   // here (not just in the controller) so any future caller can't bypass it.
   async findAllForUser(user: AuthUser) {
     const where = user.role === 'admin' ? {} : { id: user.executiveId ?? '__none__' };
-    const executives = await this.executivesRepo.find({ where, relations: ['clients'] });
+    const executives = await this.executivesRepo.find({
+      where,
+      relations: ['clients', 'clients.cobro'],
+    });
     return executives.map((exec) => this.withCounts(exec));
   }
 
   async findOneForUser(id: string, user: AuthUser) {
     this.assertAccess(id, user);
-    const executive = await this.executivesRepo.findOne({ where: { id }, relations: ['clients'] });
+    const executive = await this.executivesRepo.findOne({
+      where: { id },
+      relations: ['clients', 'clients.cobro'],
+    });
     if (!executive) throw new NotFoundException('Ejecutivo no encontrado');
     return this.withCounts(executive);
   }
@@ -62,6 +68,13 @@ export class ExecutivesService {
         this.clientsRepo.create({
           executiveId: executive!.id,
           name: c.name,
+          fanpage: c.fanpage ?? null,
+          adAccount: c.adAccount ?? null,
+          plan: c.plan ?? null,
+          country: c.country ?? null,
+          usd: c.usd ?? null,
+          ars: c.ars ?? null,
+          collectedBy: c.collectedBy ?? null,
           active: c.active,
           contactDay: c.contactDay ?? null,
           data: c.data,

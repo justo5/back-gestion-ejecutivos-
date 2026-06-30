@@ -17,6 +17,34 @@ export class Client {
   @Column()
   name: string;
 
+  // Facebook/Instagram fan page tied to the client.
+  @Column({ type: 'varchar', nullable: true })
+  fanpage: string | null;
+
+  // Ad account (Meta) used for this client, e.g. "MH Clean / 538608681139106".
+  @Column({ type: 'varchar', nullable: true })
+  adAccount: string | null;
+
+  // Contracted plan/service description, e.g. "Plan ejecución 350usd".
+  @Column({ type: 'varchar', nullable: true })
+  plan: string | null;
+
+  // Client's country, e.g. "Argentina".
+  @Column({ type: 'varchar', nullable: true })
+  country: string | null;
+
+  // Agreed amount in USD, kept as text since the sheet mixes formats ("350 + iva").
+  @Column({ type: 'varchar', nullable: true })
+  usd: string | null;
+
+  // Agreed amount in ARS, kept as text for the same reason.
+  @Column({ type: 'varchar', nullable: true })
+  ars: string | null;
+
+  // Who collects the payment for this client, e.g. "VB" or the executive's name.
+  @Column({ type: 'varchar', nullable: true })
+  collectedBy: string | null;
+
   @Column({ default: false })
   active: boolean;
 
