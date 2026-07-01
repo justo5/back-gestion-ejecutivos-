@@ -29,8 +29,11 @@ export class Cobro {
   @Column({ type: 'enum', enum: CollectedBy, nullable: true })
   collectedBy: CollectedBy | null;
 
-  @Column({ default: false })
-  paid: boolean;
+  @Column({ type: 'jsonb', nullable: true })
+  collectedByMonth: Record<string, CollectedBy> | null;
+
+  @Column({ type: 'text', array: true, default: '{}' })
+  paidMonths: string[];
 
   @Column({ type: 'timestamptz', default: () => 'now()' })
   updatedAt: Date;

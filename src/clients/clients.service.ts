@@ -24,6 +24,29 @@ export class ClientsService {
     });
   }
 
+  async updateClient(clientId: string, dto: import('./dto/update-client.dto').UpdateClientDto, user: AuthUser) {
+    const client = await this.clientsRepo.findOne({ where: { id: clientId } });
+    if (!client) throw new NotFoundException('Cliente no encontrado');
+    if (user.role !== 'admin' && user.executiveId !== client.executiveId) {
+      throw new ForbiddenException('No tenés acceso a este cliente');
+    }
+
+    Object.assign(client, {
+      ...(dto.name !== undefined && { name: dto.name }),
+      ...(dto.fanpage !== undefined && { fanpage: dto.fanpage }),
+      ...(dto.adAccount !== undefined && { adAccount: dto.adAccount }),
+      ...(dto.plan !== undefined && { plan: dto.plan }),
+      ...(dto.country !== undefined && { country: dto.country }),
+      ...(dto.usd !== undefined && { usd: dto.usd }),
+      ...(dto.ars !== undefined && { ars: dto.ars }),
+      ...(dto.collectedBy !== undefined && { collectedBy: dto.collectedBy }),
+      ...(dto.active !== undefined && { active: dto.active }),
+      ...(dto.contactDay !== undefined && { contactDay: dto.contactDay }),
+    });
+
+    return this.clientsRepo.save(client);
+  }
+
   async updateCobro(clientId: string, dto: UpdateCobroDto, user: AuthUser) {
     const client = await this.clientsRepo.findOne({ where: { id: clientId }, relations: ['cobro'] });
     if (!client) throw new NotFoundException('Cliente no encontrado');
@@ -36,8 +59,8 @@ export class ClientsService {
       cobro = this.cobrosRepo.create({ clientId });
     }
     if (dto.planId !== undefined) cobro.planId = dto.planId;
-    if (dto.collectedBy !== undefined) cobro.collectedBy = dto.collectedBy;
-    if (dto.paid !== undefined) cobro.paid = dto.paid;
+    if (dto.collectedByMonth !== undefined) cobro.collectedByMonth = dto.collectedByMonth;
+    if (dto.paidMonths !== undefined) cobro.paidMonths = dto.paidMonths;
     cobro.updatedAt = new Date();
     return this.cobrosRepo.save(cobro);
   }

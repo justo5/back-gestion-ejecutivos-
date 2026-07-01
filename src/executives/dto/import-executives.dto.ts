@@ -1,5 +1,5 @@
 import { Type } from 'class-transformer';
-import { IsArray, IsBoolean, IsNumber, IsObject, IsOptional, IsString, ValidateNested } from 'class-validator';
+import { IsArray, IsBoolean, IsDateString, IsObject, IsOptional, IsString, ValidateNested } from 'class-validator';
 
 export class ImportClientDto {
   @IsString()
@@ -37,8 +37,8 @@ export class ImportClientDto {
   active: boolean;
 
   @IsOptional()
-  @IsNumber()
-  contactDay?: number | null;
+  @IsDateString()
+  contactDay?: string | null;
 
   @IsObject()
   data: Record<string, unknown>;

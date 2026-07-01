@@ -48,9 +48,9 @@ export class Client {
   @Column({ default: false })
   active: boolean;
 
-  // Day of month the client is expected to be contacted/collected.
-  @Column({ type: 'int', nullable: true })
-  contactDay: number | null;
+  // Concrete date (day/month/year) the client is expected to be contacted/collected.
+  @Column({ type: 'date', nullable: true })
+  contactDay: string | null;
 
   // Original spreadsheet row, columns vary by import, kept as-is for display.
   @Column({ type: 'jsonb', default: () => "'{}'" })

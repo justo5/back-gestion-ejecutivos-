@@ -1,4 +1,4 @@
-import { IsBoolean, IsInt, IsObject, IsOptional, IsString } from 'class-validator';
+import { IsBoolean, IsDateString, IsInt, IsObject, IsOptional, IsString } from 'class-validator';
 
 export class CreateClientDto {
   // Only used (and required) when the caller is an admin creating a client
@@ -51,8 +51,8 @@ export class CreateClientDto {
   active: boolean;
 
   @IsOptional()
-  @IsInt()
-  contactDay?: number | null;
+  @IsDateString()
+  contactDay?: string | null;
 
   @IsOptional()
   @IsObject()

@@ -42,6 +42,19 @@ async function run() {
     return match ? match.id : null;
   };
 
+  // La planilla original sólo traía el día del mes de contacto (sin mes/año),
+  // así que se arma una fecha concreta usando el mes y año actuales como base.
+  // Es un valor provisorio hasta que se cargue la fecha real de cada cliente.
+  const seedToday = new Date();
+  const contactDateForDay = (day: number | null): string | null => {
+    if (day == null) return null;
+    const daysInMonth = new Date(seedToday.getFullYear(), seedToday.getMonth() + 1, 0).getDate();
+    const safeDay = Math.min(day, daysInMonth);
+    const mm = String(seedToday.getMonth() + 1).padStart(2, '0');
+    const dd = String(safeDay).padStart(2, '0');
+    return `${seedToday.getFullYear()}-${mm}-${dd}`;
+  };
+
   const userRepo = dataSource.getRepository(User);
   const adminEmail = process.env.ADMIN_EMAIL ?? 'admin@empresa.com';
   const adminPassword = process.env.ADMIN_PASSWORD ?? 'admin123';
@@ -137,7 +150,7 @@ async function run() {
       existing.usd = row.usd;
       existing.ars = row.ars;
       existing.collectedBy = row.collectedBy;
-      existing.contactDay = row.contactDay;
+      existing.contactDay = contactDateForDay(row.contactDay);
       existing.data = data;
       client = await clientRepo.save(existing);
       console.log(`Cliente actualizado: ${row.name} (${row.executive})`);
@@ -154,7 +167,7 @@ async function run() {
           ars: row.ars,
           collectedBy: row.collectedBy,
           active: true,
-          contactDay: row.contactDay,
+          contactDay: contactDateForDay(row.contactDay),
           data,
         }),
       );

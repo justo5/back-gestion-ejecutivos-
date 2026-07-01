@@ -22,7 +22,7 @@ erDiagram
         uuid executiveId FK
         string name
         boolean active
-        int contactDay
+        date contactDay
         jsonb data
         timestamptz createdAt
     }

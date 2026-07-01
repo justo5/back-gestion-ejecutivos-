@@ -1,4 +1,4 @@
-import { IsBoolean, IsEnum, IsOptional, IsInt } from 'class-validator';
+import { IsObject, IsOptional, IsInt, IsArray, IsString } from 'class-validator';
 import { CollectedBy } from '../../cobros/cobro.entity';
 
 export class UpdateCobroDto {
@@ -7,10 +7,11 @@ export class UpdateCobroDto {
   planId?: number | null;
 
   @IsOptional()
-  @IsEnum(CollectedBy)
-  collectedBy?: CollectedBy | null;
+  @IsObject()
+  collectedByMonth?: Record<string, CollectedBy>;
 
   @IsOptional()
-  @IsBoolean()
-  paid?: boolean;
+  @IsArray()
+  @IsString({ each: true })
+  paidMonths?: string[];
 }
