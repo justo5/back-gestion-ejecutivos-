@@ -47,6 +47,11 @@ export class CreateClientDto {
   @IsString()
   collectedBy?: string | null;
 
+  // Rubro del cliente, elegido del desplegable configurable.
+  @IsOptional()
+  @IsString()
+  rubro?: string | null;
+
   @IsBoolean()
   active: boolean;
 

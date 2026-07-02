@@ -19,7 +19,7 @@ export class Cobro {
   @Column({ unique: true })
   clientId: string;
 
-  @ManyToOne(() => Plan, { nullable: true })
+  @ManyToOne(() => Plan, { nullable: true, onDelete: 'SET NULL' })
   @JoinColumn({ name: 'planId' })
   plan: Plan | null;
 

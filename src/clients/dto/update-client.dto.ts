@@ -34,6 +34,10 @@ export class UpdateClientDto {
   collectedBy?: string | null;
 
   @IsOptional()
+  @IsString()
+  rubro?: string | null;
+
+  @IsOptional()
   @IsBoolean()
   active?: boolean;
 

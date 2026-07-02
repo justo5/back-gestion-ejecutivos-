@@ -11,8 +11,16 @@ export class PlansService {
     return this.repo.find({ order: { id: 'ASC' } });
   }
 
-  async upsert(id: number, name: string, price: number) {
-    await this.repo.upsert({ id, name, price }, ['id']);
+  async update(id: number, name: string, price: number) {
+    await this.repo.update(id, { name, price });
     return this.repo.findOneBy({ id });
+  }
+
+  create(name: string, price: number) {
+    return this.repo.save(this.repo.create({ name, price }));
+  }
+
+  async remove(id: number) {
+    await this.repo.delete(id);
   }
 }

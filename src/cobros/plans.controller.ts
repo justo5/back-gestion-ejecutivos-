@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Param, Put, UseGuards } from '@nestjs/common';
+import { Body, Controller, Delete, Get, HttpCode, Param, Post, Put, UseGuards } from '@nestjs/common';
 import { PlansService } from './plans.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { RolesGuard } from '../auth/roles.guard';
@@ -17,8 +17,21 @@ export class PlansController {
   }
 
   @Roles(UserRole.ADMIN)
+  @Post()
+  create(@Body() dto: UpsertPlanDto) {
+    return this.service.create(dto.name, dto.price);
+  }
+
+  @Roles(UserRole.ADMIN)
   @Put(':id')
-  upsert(@Param('id') id: string, @Body() dto: UpsertPlanDto) {
-    return this.service.upsert(Number(id), dto.name, dto.price);
+  update(@Param('id') id: string, @Body() dto: UpsertPlanDto) {
+    return this.service.update(Number(id), dto.name, dto.price);
+  }
+
+  @Roles(UserRole.ADMIN)
+  @Delete(':id')
+  @HttpCode(204)
+  remove(@Param('id') id: string) {
+    return this.service.remove(Number(id));
   }
 }

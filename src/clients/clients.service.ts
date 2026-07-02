@@ -40,6 +40,7 @@ export class ClientsService {
       ...(dto.usd !== undefined && { usd: dto.usd }),
       ...(dto.ars !== undefined && { ars: dto.ars }),
       ...(dto.collectedBy !== undefined && { collectedBy: dto.collectedBy }),
+      ...(dto.rubro !== undefined && { rubro: dto.rubro }),
       ...(dto.active !== undefined && { active: dto.active }),
       ...(dto.contactDay !== undefined && { contactDay: dto.contactDay }),
     });
@@ -63,6 +64,15 @@ export class ClientsService {
     if (dto.paidMonths !== undefined) cobro.paidMonths = dto.paidMonths;
     cobro.updatedAt = new Date();
     return this.cobrosRepo.save(cobro);
+  }
+
+  async deleteClient(clientId: string, user: AuthUser) {
+    const client = await this.clientsRepo.findOne({ where: { id: clientId } });
+    if (!client) throw new NotFoundException('Cliente no encontrado');
+    if (user.role !== 'admin' && user.executiveId !== client.executiveId) {
+      throw new ForbiddenException('No tenés acceso a este cliente');
+    }
+    await this.clientsRepo.remove(client);
   }
 
   // Ejecutivos can only ever create clients under their own executiveId.
@@ -92,6 +102,7 @@ export class ClientsService {
       usd: dto.usd ?? null,
       ars: dto.ars ?? null,
       collectedBy: dto.collectedBy ?? null,
+      rubro: dto.rubro ?? null,
       active: dto.active,
       contactDay: dto.contactDay ?? null,
       data: dto.data ?? {},

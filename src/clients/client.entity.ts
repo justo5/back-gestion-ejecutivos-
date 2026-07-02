@@ -45,6 +45,11 @@ export class Client {
   @Column({ type: 'varchar', nullable: true })
   collectedBy: string | null;
 
+  // Rubro/industria del cliente, elegido del desplegable configurable. Se guarda
+  // como texto (por nombre) para desacoplarlo de la lista de rubros.
+  @Column({ type: 'varchar', nullable: true })
+  rubro: string | null;
+
   @Column({ default: false })
   active: boolean;
 
