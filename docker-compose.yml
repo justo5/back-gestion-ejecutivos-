@@ -5,12 +5,10 @@ services:
     restart: unless-stopped
     environment:
       POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres
+      POSTGRES_PASSWORD: FCMOLvyg1ZsbFCRvD9Y1
       POSTGRES_DB: gestion_ejecutivos
     volumes:
       - gestion-ejecutivos-db-data:/var/lib/postgresql/data
-    ports:
-      - "5432:5432"
     networks:
       - gestion-ejecutivos-net
 
@@ -24,15 +22,13 @@ services:
       DB_HOST: postgres
       DB_PORT: 5432
       DB_USER: postgres
-      DB_PASSWORD: postgres
+      DB_PASSWORD: FCMOLvyg1ZsbFCRvD9Y1
       DB_NAME: gestion_ejecutivos
       DB_SYNC: "true"
-      JWT_SECRET: change-me-in-production
+      JWT_SECRET: b166d22f55b533d03b46d87158bc1dc467b06cffc94791684d03d82824d67b62
       ADMIN_EMAIL: admin@empresa.com
-      ADMIN_PASSWORD: admin123
+      ADMIN_PASSWORD: ic8DqTG0VTU86KLegg8Z
       PORT: 3000
-    ports:
-      - "3000:3000"
     command: sh -c "node dist/seed/seed.js || true; node dist/main.js"
     networks:
       - gestion-ejecutivos-net
