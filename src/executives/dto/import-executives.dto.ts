@@ -1,5 +1,5 @@
 import { Type } from 'class-transformer';
-import { IsArray, IsBoolean, IsDateString, IsObject, IsOptional, IsString, ValidateNested } from 'class-validator';
+import { IsArray, IsBoolean, IsDateString, IsInt, IsObject, IsOptional, IsString, ValidateNested } from 'class-validator';
 
 export class ImportClientDto {
   @IsString()
@@ -11,10 +11,6 @@ export class ImportClientDto {
 
   @IsOptional()
   @IsString()
-  adAccount?: string | null;
-
-  @IsOptional()
-  @IsString()
   plan?: string | null;
 
   @IsOptional()
@@ -23,11 +19,11 @@ export class ImportClientDto {
 
   @IsOptional()
   @IsString()
-  usd?: string | null;
+  sexo?: string | null;
 
   @IsOptional()
-  @IsString()
-  ars?: string | null;
+  @IsInt()
+  edad?: number | null;
 
   @IsOptional()
   @IsString()

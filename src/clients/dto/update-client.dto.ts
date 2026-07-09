@@ -1,4 +1,4 @@
-import { IsBoolean, IsDateString, IsOptional, IsString } from 'class-validator';
+import { IsBoolean, IsDateString, IsInt, IsOptional, IsString } from 'class-validator';
 
 export class UpdateClientDto {
   @IsOptional()
@@ -11,10 +11,6 @@ export class UpdateClientDto {
 
   @IsOptional()
   @IsString()
-  adAccount?: string | null;
-
-  @IsOptional()
-  @IsString()
   plan?: string | null;
 
   @IsOptional()
@@ -23,11 +19,11 @@ export class UpdateClientDto {
 
   @IsOptional()
   @IsString()
-  usd?: string | null;
+  sexo?: string | null;
 
   @IsOptional()
-  @IsString()
-  ars?: string | null;
+  @IsInt()
+  edad?: number | null;
 
   @IsOptional()
   @IsString()

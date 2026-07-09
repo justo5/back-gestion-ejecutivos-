@@ -15,10 +15,6 @@ export class CreateClientDto {
   @IsString()
   fanpage?: string | null;
 
-  @IsOptional()
-  @IsString()
-  adAccount?: string | null;
-
   // Texto libre del plan (legacy/observación). El plan "real" del cobro se
   // elige del desplegable de configuración vía `planId`.
   @IsOptional()
@@ -37,11 +33,11 @@ export class CreateClientDto {
 
   @IsOptional()
   @IsString()
-  usd?: string | null;
+  sexo?: string | null;
 
   @IsOptional()
-  @IsString()
-  ars?: string | null;
+  @IsInt()
+  edad?: number | null;
 
   @IsOptional()
   @IsString()
