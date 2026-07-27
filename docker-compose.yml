@@ -29,7 +29,6 @@ services:
       ADMIN_EMAIL: admin@empresa.com
       ADMIN_PASSWORD: ic8DqTG0VTU86KLegg8Z
       PORT: 3000
-    command: sh -c "node dist/seed/seed.js || true; node dist/main.js"
     networks:
       - gestion-ejecutivos-net
 
