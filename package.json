@@ -7,7 +7,8 @@
     "start": "nest start",
     "start:dev": "nest start --watch",
     "start:prod": "node dist/main.js",
-    "seed": "ts-node -r tsconfig-paths/register src/seed/seed.ts"
+    "seed": "ts-node -r tsconfig-paths/register src/seed/seed.ts",
+    "seed:prod": "node dist/seed/seed.js"
   },
   "dependencies": {
     "@nestjs/common": "^11.0.1",
