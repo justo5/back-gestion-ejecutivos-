@@ -61,6 +61,7 @@ export class ClientsService {
     if (dto.planId !== undefined) cobro.planId = dto.planId;
     if (dto.collectedByMonth !== undefined) cobro.collectedByMonth = dto.collectedByMonth;
     if (dto.paidMonths !== undefined) cobro.paidMonths = dto.paidMonths;
+    if (dto.gastosByMonth !== undefined) cobro.gastosByMonth = dto.gastosByMonth;
     cobro.updatedAt = new Date();
     return this.cobrosRepo.save(cobro);
   }

@@ -14,4 +14,8 @@ export class UpdateCobroDto {
   @IsArray()
   @IsString({ each: true })
   paidMonths?: string[];
+
+  @IsOptional()
+  @IsObject()
+  gastosByMonth?: Record<string, number>;
 }

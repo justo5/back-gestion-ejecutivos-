@@ -35,6 +35,11 @@ export class Cobro {
   @Column({ type: 'text', array: true, default: '{}' })
   paidMonths: string[];
 
+  // Gasto puntual de un mes específico (no se repite en los demás meses),
+  // guardado por yearMonth ("2026-08") igual que collectedByMonth.
+  @Column({ type: 'jsonb', nullable: true })
+  gastosByMonth: Record<string, number> | null;
+
   @Column({ type: 'timestamptz', default: () => 'now()' })
   updatedAt: Date;
 }
