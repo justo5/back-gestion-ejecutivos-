@@ -42,13 +42,17 @@ export class ExecutivesService {
 
   private withCounts(executive: Executive) {
     const clients = executive.clients ?? [];
+    // Los clientes dados de baja (soft delete) siguen viajando en `clients`
+    // porque Cobros los necesita para mostrar el historial de meses previos
+    // a la baja, pero no cuentan como clientes "vigentes" del ejecutivo.
+    const currentClients = clients.filter((c) => !c.deletedAt);
     return {
       id: executive.id,
       name: executive.name,
       imageUrl: executive.imageUrl,
       squad: executive.squad,
-      clientCount: clients.length,
-      activeCount: clients.filter((c) => c.active).length,
+      clientCount: currentClients.length,
+      activeCount: currentClients.filter((c) => c.active).length,
       clients,
     };
   }

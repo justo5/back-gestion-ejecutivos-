@@ -89,4 +89,12 @@ export class Client {
 
   @Column({ type: 'timestamptz', default: () => 'now()' })
   createdAt: Date;
+
+  // Soft delete: "eliminar cliente" no borra la fila (arrastraría en cascada
+  // el Cobro y con él el historial de pagos ya cobrados). En cambio se marca
+  // con la fecha de baja acá; el cliente deja de aparecer como activo/futuro
+  // en toda la app, pero su historial sigue disponible para los meses
+  // anteriores a esta fecha (ver Cobros).
+  @Column({ type: 'timestamptz', nullable: true })
+  deletedAt: Date | null;
 }

@@ -84,9 +84,15 @@ export class ClientsService {
     return this.cobrosRepo.save(cobro);
   }
 
+  // Soft delete: no se borra la fila (eso arrastraría en cascada el Cobro y
+  // con él todo el historial de pagos ya cobrados). Se marca deletedAt y listo:
+  // el cliente deja de contar como activo/futuro en todos lados, pero su
+  // historial sigue disponible para los meses anteriores a la baja.
   async deleteClient(clientId: string, user: AuthUser) {
     const client = await this.findOwnedClient(clientId, user);
-    await this.clientsRepo.remove(client);
+    if (client.deletedAt) return;
+    client.deletedAt = new Date();
+    await this.clientsRepo.save(client);
   }
 
   // --- Ficha extendida: notas / estado / link (antes en localStorage) ---
