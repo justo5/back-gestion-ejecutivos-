@@ -35,6 +35,14 @@ export class Cobro {
   @Column({ type: 'text', array: true, default: '{}' })
   paidMonths: string[];
 
+  // Para cada mes de "paidMonths", en qué mes calendario se cobró realmente
+  // la plata (yearMonth "2026-08"). Un cliente que debía julio y paga recién
+  // en agosto queda con collectedInMonth['2026-07'] = '2026-08': el mes
+  // adeudado sigue siendo julio, pero el ingreso impacta en el reporte de
+  // agosto, que es cuando efectivamente entró la plata.
+  @Column({ type: 'jsonb', nullable: true })
+  collectedInMonth: Record<string, string> | null;
+
   // Gasto puntual de un mes específico (no se repite en los demás meses),
   // guardado por yearMonth ("2026-08") igual que collectedByMonth.
   @Column({ type: 'jsonb', nullable: true })

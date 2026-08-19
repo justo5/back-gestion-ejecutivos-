@@ -17,5 +17,9 @@ export class UpdateCobroDto {
 
   @IsOptional()
   @IsObject()
+  collectedInMonth?: Record<string, string>;
+
+  @IsOptional()
+  @IsObject()
   gastosByMonth?: Record<string, number>;
 }
