@@ -84,6 +84,14 @@ export class ClientsService {
     return this.cobrosRepo.save(cobro);
   }
 
+  // Foto del cliente, igual que ExecutivesService#updateImage pero acá
+  // cualquier ejecutivo dueño del cliente puede cambiarla, no solo el admin.
+  async updateImage(clientId: string, imageUrl: string, user: AuthUser) {
+    const client = await this.findOwnedClient(clientId, user);
+    client.imageUrl = imageUrl || null;
+    return this.clientsRepo.save(client);
+  }
+
   // Soft delete: no se borra la fila (eso arrastraría en cascada el Cobro y
   // con él todo el historial de pagos ya cobrados). Se marca deletedAt y listo:
   // el cliente deja de contar como activo/futuro en todos lados, pero su

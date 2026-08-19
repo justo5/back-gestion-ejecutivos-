@@ -64,6 +64,11 @@ export class Client {
   @Column({ type: 'jsonb', default: () => "'{}'" })
   data: Record<string, unknown>;
 
+  // Foto del cliente. Puede ser una URL o un data URI (foto subida desde el
+  // front, ver ClientsController#updateImage). null = mostrar iniciales.
+  @Column({ type: 'text', nullable: true })
+  imageUrl: string | null;
+
   @OneToOne(() => Cobro, (cobro) => cobro.client)
   cobro: Cobro;
 

@@ -34,6 +34,11 @@ export class ClientsController {
     return this.service.updateCobro(id, dto, user);
   }
 
+  @Patch(':id/image')
+  updateImage(@Param('id') id: string, @Body('imageUrl') imageUrl: string, @CurrentUser() user: AuthUser) {
+    return this.service.updateImage(id, imageUrl, user);
+  }
+
   @Delete(':id')
   @HttpCode(204)
   remove(@Param('id') id: string, @CurrentUser() user: AuthUser) {
