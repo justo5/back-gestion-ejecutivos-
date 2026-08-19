@@ -1,6 +1,13 @@
-import { Column, Entity, JoinColumn, ManyToOne, OneToOne, PrimaryGeneratedColumn } from 'typeorm';
+import { Column, Entity, JoinColumn, ManyToOne, OneToMany, OneToOne, PrimaryGeneratedColumn } from 'typeorm';
 import { Executive } from '../executives/executive.entity';
 import { Cobro } from '../cobros/cobro.entity';
+import { ClientTodo } from './client-todo.entity';
+
+// Valores válidos de statusOverride. String (no enum de Postgres) a propósito:
+// agregar un estado nuevo el día de mañana es un cambio de código, no un
+// ALTER TYPE en la base.
+export const CLIENT_STATUS_VALUES = ['active', 'warning', 'critical'] as const;
+export type ClientStatusOverride = (typeof CLIENT_STATUS_VALUES)[number];
 
 @Entity('clients')
 export class Client {
@@ -59,6 +66,26 @@ export class Client {
 
   @OneToOne(() => Cobro, (cobro) => cobro.client)
   cobro: Cobro;
+
+  // --- Ficha extendida del cliente (antes vivía en localStorage del navegador) ---
+
+  // Nota libre del ejecutivo sobre el cliente (pestaña "Notas" de la ficha).
+  @Column({ type: 'text', nullable: true })
+  notes: string | null;
+
+  // Override manual del estado semafórico que por defecto calcula el
+  // frontend (activo/atención/crítico según pagos). null = usar el
+  // calculado automáticamente.
+  @Column({ type: 'varchar', nullable: true })
+  statusOverride: ClientStatusOverride | null;
+
+  // Override manual del link de contacto mostrado en la ficha (por defecto
+  // el frontend arma uno propio si no hay override).
+  @Column({ type: 'varchar', nullable: true })
+  linkOverride: string | null;
+
+  @OneToMany(() => ClientTodo, (todo) => todo.client)
+  todos: ClientTodo[];
 
   @Column({ type: 'timestamptz', default: () => 'now()' })
   createdAt: Date;

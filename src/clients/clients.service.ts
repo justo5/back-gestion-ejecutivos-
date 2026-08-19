@@ -2,34 +2,51 @@ import { ForbiddenException, Injectable, NotFoundException } from '@nestjs/commo
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Client } from './client.entity';
+import { ClientTodo } from './client-todo.entity';
 import { Cobro } from '../cobros/cobro.entity';
 import { AuthUser } from '../auth/current-user.decorator';
 import { UpdateCobroDto } from './dto/update-cobro.dto';
 import { CreateClientDto } from './dto/create-client.dto';
+import { UpdateClientExtrasDto } from './dto/update-client-extras.dto';
+import { CreateTodoDto } from './dto/create-todo.dto';
+import { UpdateTodoDto } from './dto/update-todo.dto';
 
 @Injectable()
 export class ClientsService {
   constructor(
     @InjectRepository(Client) private clientsRepo: Repository<Client>,
     @InjectRepository(Cobro) private cobrosRepo: Repository<Cobro>,
+    @InjectRepository(ClientTodo) private clientTodosRepo: Repository<ClientTodo>,
   ) {}
 
   // Same rule as ExecutivesService: an ejecutivo can only ever see clients
   // tied to their own executiveId, regardless of what's requested.
-  findAllForUser(user: AuthUser) {
+  async findAllForUser(user: AuthUser) {
     const where = user.role === 'admin' ? {} : { executiveId: user.executiveId ?? '__none__' };
-    return this.clientsRepo.find({
+    const clients = await this.clientsRepo.find({
       where,
-      relations: ['executive', 'cobro', 'cobro.plan'],
+      relations: ['executive', 'cobro', 'cobro.plan', 'todos'],
     });
+    // Más nuevo primero, como quedaban en el localStorage viejo.
+    clients.forEach((c) => c.todos?.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime()));
+    return clients;
   }
 
-  async updateClient(clientId: string, dto: import('./dto/update-client.dto').UpdateClientDto, user: AuthUser) {
+  // Centraliza la regla de acceso usada por todos los endpoints de :id: un
+  // ejecutivo solo puede tocar clientes de su propio executiveId, un admin
+  // puede tocar cualquiera. La reutilizan tanto los endpoints existentes
+  // como cualquier función nueva que se agregue sobre un cliente puntual.
+  private async findOwnedClient(clientId: string, user: AuthUser): Promise<Client> {
     const client = await this.clientsRepo.findOne({ where: { id: clientId } });
     if (!client) throw new NotFoundException('Cliente no encontrado');
     if (user.role !== 'admin' && user.executiveId !== client.executiveId) {
       throw new ForbiddenException('No tenés acceso a este cliente');
     }
+    return client;
+  }
+
+  async updateClient(clientId: string, dto: import('./dto/update-client.dto').UpdateClientDto, user: AuthUser) {
+    const client = await this.findOwnedClient(clientId, user);
 
     Object.assign(client, {
       ...(dto.name !== undefined && { name: dto.name }),
@@ -68,12 +85,42 @@ export class ClientsService {
   }
 
   async deleteClient(clientId: string, user: AuthUser) {
-    const client = await this.clientsRepo.findOne({ where: { id: clientId } });
-    if (!client) throw new NotFoundException('Cliente no encontrado');
-    if (user.role !== 'admin' && user.executiveId !== client.executiveId) {
-      throw new ForbiddenException('No tenés acceso a este cliente');
-    }
+    const client = await this.findOwnedClient(clientId, user);
     await this.clientsRepo.remove(client);
+  }
+
+  // --- Ficha extendida: notas / estado / link (antes en localStorage) ---
+
+  async updateExtras(clientId: string, dto: UpdateClientExtrasDto, user: AuthUser) {
+    const client = await this.findOwnedClient(clientId, user);
+    if (dto.notes !== undefined) client.notes = dto.notes;
+    if (dto.statusOverride !== undefined) client.statusOverride = dto.statusOverride;
+    if (dto.linkOverride !== undefined) client.linkOverride = dto.linkOverride;
+    return this.clientsRepo.save(client);
+  }
+
+  // --- To Do del cliente ---
+
+  async addTodo(clientId: string, dto: CreateTodoDto, user: AuthUser) {
+    await this.findOwnedClient(clientId, user);
+    const todo = this.clientTodosRepo.create({ clientId, text: dto.text.trim() });
+    return this.clientTodosRepo.save(todo);
+  }
+
+  async updateTodo(clientId: string, todoId: string, dto: UpdateTodoDto, user: AuthUser) {
+    await this.findOwnedClient(clientId, user);
+    const todo = await this.clientTodosRepo.findOne({ where: { id: todoId, clientId } });
+    if (!todo) throw new NotFoundException('Tarea no encontrada');
+    if (dto.done !== undefined) todo.done = dto.done;
+    if (dto.text !== undefined) todo.text = dto.text.trim();
+    return this.clientTodosRepo.save(todo);
+  }
+
+  async deleteTodo(clientId: string, todoId: string, user: AuthUser) {
+    await this.findOwnedClient(clientId, user);
+    const todo = await this.clientTodosRepo.findOne({ where: { id: todoId, clientId } });
+    if (!todo) throw new NotFoundException('Tarea no encontrada');
+    await this.clientTodosRepo.remove(todo);
   }
 
   // Ejecutivos can only ever create clients under their own executiveId.
