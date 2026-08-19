@@ -88,7 +88,8 @@ export class ExecutivesService {
     return { imported: dto.executives.length };
   }
 
-  updateImage(id: string, imageUrl: string) {
+  updateImage(id: string, imageUrl: string, user: AuthUser) {
+    this.assertAccess(id, user);
     return this.executivesRepo.update(id, { imageUrl });
   }
 }

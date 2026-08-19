@@ -28,9 +28,10 @@ export class ExecutivesController {
     return this.service.importAll(dto);
   }
 
-  @Roles(UserRole.ADMIN)
+  // Sin @Roles: tanto el admin como el propio ejecutivo pueden cambiar su
+  // foto (el service valida con assertAccess que no sea la de otro).
   @Patch(':id/image')
-  updateImage(@Param('id') id: string, @Body('imageUrl') imageUrl: string) {
-    return this.service.updateImage(id, imageUrl);
+  updateImage(@Param('id') id: string, @Body('imageUrl') imageUrl: string, @CurrentUser() user: AuthUser) {
+    return this.service.updateImage(id, imageUrl, user);
   }
 }
