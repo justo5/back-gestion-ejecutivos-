@@ -78,9 +78,9 @@ export class Client {
   @Column({ type: 'text', nullable: true })
   notes: string | null;
 
-  // Override manual del estado semafórico que por defecto calcula el
-  // frontend (activo/atención/crítico según pagos). null = usar el
-  // calculado automáticamente.
+  // Semáforo de rendimiento de campañas del cliente, cargado a mano por el
+  // ejecutivo desde la ficha (no tiene relación con el estado de pago). null
+  // = todavía no se evaluó, el frontend lo muestra como verde por defecto.
   @Column({ type: 'varchar', nullable: true })
   statusOverride: ClientStatusOverride | null;
 
