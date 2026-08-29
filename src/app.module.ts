@@ -7,6 +7,7 @@ import { ExecutivesModule } from './executives/executives.module';
 import { ClientsModule } from './clients/clients.module';
 import { CobrosModule } from './cobros/cobros.module';
 import { RubrosModule } from './rubros/rubros.module';
+import { GoalsModule } from './goals/goals.module';
 import { User } from './users/user.entity';
 import { Executive } from './executives/executive.entity';
 import { Client } from './clients/client.entity';
@@ -14,6 +15,7 @@ import { ClientTodo } from './clients/client-todo.entity';
 import { Plan } from './cobros/plan.entity';
 import { Cobro } from './cobros/cobro.entity';
 import { Rubro } from './rubros/rubro.entity';
+import { DashboardGoal } from './goals/dashboard-goal.entity';
 
 @Module({
   imports: [
@@ -28,7 +30,7 @@ import { Rubro } from './rubros/rubro.entity';
         username: config.get('DB_USER', 'postgres'),
         password: config.get('DB_PASSWORD', 'postgres'),
         database: config.get('DB_NAME', 'gestion_ejecutivos'),
-        entities: [User, Executive, Client, ClientTodo, Plan, Cobro, Rubro],
+        entities: [User, Executive, Client, ClientTodo, Plan, Cobro, Rubro, DashboardGoal],
         synchronize: config.get('DB_SYNC', 'true') === 'true',
       }),
     }),
@@ -38,6 +40,7 @@ import { Rubro } from './rubros/rubro.entity';
     ClientsModule,
     CobrosModule,
     RubrosModule,
+    GoalsModule,
   ],
 })
 export class AppModule {}
