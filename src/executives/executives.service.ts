@@ -1,6 +1,6 @@
 import { ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { IsNull, Repository } from 'typeorm';
 import { Executive } from './executive.entity';
 import { Client } from '../clients/client.entity';
 import { AuthUser } from '../auth/current-user.decorator';
@@ -91,5 +91,36 @@ export class ExecutivesService {
   updateImage(id: string, imageUrl: string, user: AuthUser) {
     this.assertAccess(id, user);
     return this.executivesRepo.update(id, { imageUrl });
+  }
+
+  // Crecimiento acumulado de TODA la empresa (todos los ejecutivos sumados),
+  // últimos 12 meses. A diferencia de findAllForUser, no se filtra por rol:
+  // cualquier usuario autenticado lo puede ver (ver ExecutivesController),
+  // porque es la única vista "de la empresa" que le corresponde a un
+  // ejecutivo no admin (su propio findAllForUser solo trae su cartera).
+  // Mismo criterio de "baseline" que el gráfico por ejecutivo del frontend
+  // (ver DashboardPage#buildExecutiveGrowth): un contactDay anterior a la
+  // ventana de 12 meses (o sin cargar) cuenta como "ya estaba".
+  async getGeneralGrowth(): Promise<number[]> {
+    const clients = await this.clientsRepo.find({ where: { deletedAt: IsNull() } });
+
+    const now = new Date();
+    const monthYms: string[] = [];
+    for (let i = 11; i >= 0; i--) {
+      const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+      monthYms.push(`${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`);
+    }
+    const windowStartYm = monthYms[0];
+
+    const baseline = clients.filter((c) => {
+      const ym = (c.contactDay ?? '').slice(0, 7);
+      return !ym || ym < windowStartYm;
+    }).length;
+
+    let running = baseline;
+    return monthYms.map((ym) => {
+      running += clients.filter((c) => (c.contactDay ?? '').slice(0, 7) === ym).length;
+      return running;
+    });
   }
 }

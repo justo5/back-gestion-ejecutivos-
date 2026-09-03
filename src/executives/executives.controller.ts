@@ -17,6 +17,15 @@ export class ExecutivesController {
     return this.service.findAllForUser(user);
   }
 
+  // Crecimiento de la empresa completa: sin @Roles y sin filtrar por
+  // ejecutivo (ver ExecutivesService#getGeneralGrowth), para que cualquier
+  // ejecutivo vea cómo va el equipo en conjunto, no solo su propia cartera.
+  // Declarado antes de ':id' para que Nest no lo confunda con ese parámetro.
+  @Get('growth/general')
+  generalGrowth() {
+    return this.service.getGeneralGrowth();
+  }
+
   @Get(':id')
   findOne(@Param('id') id: string, @CurrentUser() user: AuthUser) {
     return this.service.findOneForUser(id, user);
