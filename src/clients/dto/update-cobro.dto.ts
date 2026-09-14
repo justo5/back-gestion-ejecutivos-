@@ -22,4 +22,8 @@ export class UpdateCobroDto {
   @IsOptional()
   @IsObject()
   gastosByMonth?: Record<string, number>;
+
+  @IsOptional()
+  @IsObject()
+  ivaByMonth?: Record<string, boolean>;
 }

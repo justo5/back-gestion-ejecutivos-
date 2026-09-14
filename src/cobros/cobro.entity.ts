@@ -48,6 +48,12 @@ export class Cobro {
   @Column({ type: 'jsonb', nullable: true })
   gastosByMonth: Record<string, number> | null;
 
+  // Recordatorio manual de "hay que facturar con IVA este mes", guardado por
+  // yearMonth igual que gastosByMonth. Es solo informativo: no participa en
+  // ningún cálculo de montos ni totales.
+  @Column({ type: 'jsonb', nullable: true })
+  ivaByMonth: Record<string, boolean> | null;
+
   @Column({ type: 'timestamptz', default: () => 'now()' })
   updatedAt: Date;
 }

@@ -80,6 +80,7 @@ export class ClientsService {
     if (dto.paidMonths !== undefined) cobro.paidMonths = dto.paidMonths;
     if (dto.collectedInMonth !== undefined) cobro.collectedInMonth = dto.collectedInMonth;
     if (dto.gastosByMonth !== undefined) cobro.gastosByMonth = dto.gastosByMonth;
+    if (dto.ivaByMonth !== undefined) cobro.ivaByMonth = dto.ivaByMonth;
     cobro.updatedAt = new Date();
     return this.cobrosRepo.save(cobro);
   }
