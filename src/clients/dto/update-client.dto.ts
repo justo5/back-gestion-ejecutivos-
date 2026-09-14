@@ -33,6 +33,11 @@ export class UpdateClientDto {
   @IsString()
   rubro?: string | null;
 
+  // Si el cliente factura con IVA.
+  @IsOptional()
+  @IsBoolean()
+  iva?: boolean | null;
+
   @IsOptional()
   @IsBoolean()
   active?: boolean;

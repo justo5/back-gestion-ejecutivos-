@@ -53,6 +53,10 @@ export class Client {
   @Column({ type: 'varchar', nullable: true })
   rubro: string | null;
 
+  // Si el cliente factura con IVA. null = todavía no se especificó.
+  @Column({ type: 'boolean', nullable: true })
+  iva: boolean | null;
+
   @Column({ default: false })
   active: boolean;
 

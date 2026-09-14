@@ -48,6 +48,11 @@ export class CreateClientDto {
   @IsString()
   rubro?: string | null;
 
+  // Si el cliente factura con IVA.
+  @IsOptional()
+  @IsBoolean()
+  iva?: boolean | null;
+
   @IsBoolean()
   active: boolean;
 

@@ -57,6 +57,7 @@ export class ClientsService {
       ...(dto.edad !== undefined && { edad: dto.edad }),
       ...(dto.collectedBy !== undefined && { collectedBy: dto.collectedBy }),
       ...(dto.rubro !== undefined && { rubro: dto.rubro }),
+      ...(dto.iva !== undefined && { iva: dto.iva }),
       ...(dto.active !== undefined && { active: dto.active }),
       ...(dto.contactDay !== undefined && { contactDay: dto.contactDay }),
     });
@@ -165,6 +166,7 @@ export class ClientsService {
       edad: dto.edad ?? null,
       collectedBy: dto.collectedBy ?? null,
       rubro: dto.rubro ?? null,
+      iva: dto.iva ?? null,
       active: dto.active,
       contactDay: dto.contactDay ?? null,
       data: dto.data ?? {},
