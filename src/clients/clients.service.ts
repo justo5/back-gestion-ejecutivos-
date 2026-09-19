@@ -139,6 +139,19 @@ export class ClientsService {
     await this.clientsRepo.save(client);
   }
 
+  // Borrado definitivo, para clientes mal cargados o que nunca terminaron
+  // entrando. A diferencia del soft delete, esto sí borra la fila y arrastra
+  // en cascada (a nivel base) su Cobro con todo el historial de pagos y sus
+  // To Do, sin vuelta atrás. Por eso solo se permite sobre clientes que ya
+  // están dados de baja: nunca se salta directo de "cliente vigente" a borrado.
+  async deleteClientPermanently(clientId: string, user: AuthUser) {
+    const client = await this.findOwnedClient(clientId, user);
+    if (!client.deletedAt) {
+      throw new BadRequestException('Solo se puede eliminar definitivamente un cliente dado de baja');
+    }
+    await this.clientsRepo.delete({ id: client.id });
+  }
+
   // --- Ficha extendida: notas / estado / link (antes en localStorage) ---
 
   async updateExtras(clientId: string, dto: UpdateClientExtrasDto, user: AuthUser) {

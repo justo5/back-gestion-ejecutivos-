@@ -59,6 +59,13 @@ export class ClientsController {
     return this.service.removeBaja(id, user);
   }
 
+  // Borrado definitivo (irreversible) de un cliente ya dado de baja.
+  @Delete(':id/permanent')
+  @HttpCode(204)
+  removePermanently(@Param('id') id: string, @CurrentUser() user: AuthUser) {
+    return this.service.deleteClientPermanently(id, user);
+  }
+
   // --- Ficha extendida: notas / estado / link ---
 
   @Patch(':id/extras')
