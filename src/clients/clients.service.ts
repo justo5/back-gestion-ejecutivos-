@@ -1,4 +1,4 @@
-import { ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Client } from './client.entity';
@@ -8,6 +8,7 @@ import { AuthUser } from '../auth/current-user.decorator';
 import { UpdateCobroDto } from './dto/update-cobro.dto';
 import { CreateClientDto } from './dto/create-client.dto';
 import { UpdateClientExtrasDto } from './dto/update-client-extras.dto';
+import { UpdateBajaDto } from './dto/update-baja.dto';
 import { CreateTodoDto } from './dto/create-todo.dto';
 import { UpdateTodoDto } from './dto/update-todo.dto';
 
@@ -102,6 +103,39 @@ export class ClientsService {
     const client = await this.findOwnedClient(clientId, user);
     if (client.deletedAt) return;
     client.deletedAt = new Date();
+    await this.clientsRepo.save(client);
+  }
+
+  // --- Bajas: editar fecha/motivo y eliminar la baja ---
+
+  // Solo aplica a clientes que ya están dados de baja. La fecha llega como
+  // 'YYYY-MM-DD' desde un input date: se guarda a mediodía UTC para que en
+  // cualquier huso horario razonable (Argentina incluida) siga cayendo en el
+  // mismo día calendario, en vez de correrse al día anterior con las 00:00 UTC.
+  async updateBaja(clientId: string, dto: UpdateBajaDto, user: AuthUser) {
+    const client = await this.findOwnedClient(clientId, user);
+    if (!client.deletedAt) throw new BadRequestException('El cliente no está dado de baja');
+
+    if (dto.deletedAt !== undefined) {
+      const isDateOnly = /^\d{4}-\d{2}-\d{2}$/.test(dto.deletedAt);
+      const date = new Date(isDateOnly ? `${dto.deletedAt}T12:00:00Z` : dto.deletedAt);
+      if (isNaN(date.getTime())) throw new BadRequestException('Fecha de baja inválida');
+      client.deletedAt = date;
+    }
+    if (dto.deletedReason !== undefined) {
+      client.deletedReason = dto.deletedReason?.trim() || null;
+    }
+    return this.clientsRepo.save(client);
+  }
+
+  // "Eliminar una baja" = deshacerla: el cliente vuelve a estar vigente. No
+  // borra nada (ni el cliente ni su historial de cobros), solo limpia la marca
+  // de soft delete y el motivo.
+  async removeBaja(clientId: string, user: AuthUser) {
+    const client = await this.findOwnedClient(clientId, user);
+    if (!client.deletedAt) return;
+    client.deletedAt = null;
+    client.deletedReason = null;
     await this.clientsRepo.save(client);
   }
 

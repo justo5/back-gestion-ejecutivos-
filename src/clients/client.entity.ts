@@ -106,4 +106,10 @@ export class Client {
   // anteriores a esta fecha (ver Cobros).
   @Column({ type: 'timestamptz', nullable: true })
   deletedAt: Date | null;
+
+  // Motivo de la baja, texto libre que carga el ejecutivo desde la sección
+  // Bajas. null = todavía no se indicó. Se limpia junto con deletedAt si la
+  // baja se elimina (el cliente vuelve a estar activo).
+  @Column({ type: 'text', nullable: true })
+  deletedReason: string | null;
 }

@@ -6,6 +6,7 @@ import { UpdateCobroDto } from './dto/update-cobro.dto';
 import { CreateClientDto } from './dto/create-client.dto';
 import { UpdateClientDto } from './dto/update-client.dto';
 import { UpdateClientExtrasDto } from './dto/update-client-extras.dto';
+import { UpdateBajaDto } from './dto/update-baja.dto';
 import { CreateTodoDto } from './dto/create-todo.dto';
 import { UpdateTodoDto } from './dto/update-todo.dto';
 
@@ -43,6 +44,19 @@ export class ClientsController {
   @HttpCode(204)
   remove(@Param('id') id: string, @CurrentUser() user: AuthUser) {
     return this.service.deleteClient(id, user);
+  }
+
+  // --- Bajas: editar fecha/motivo y eliminar la baja (reactiva al cliente) ---
+
+  @Patch(':id/baja')
+  updateBaja(@Param('id') id: string, @Body() dto: UpdateBajaDto, @CurrentUser() user: AuthUser) {
+    return this.service.updateBaja(id, dto, user);
+  }
+
+  @Delete(':id/baja')
+  @HttpCode(204)
+  removeBaja(@Param('id') id: string, @CurrentUser() user: AuthUser) {
+    return this.service.removeBaja(id, user);
   }
 
   // --- Ficha extendida: notas / estado / link ---
