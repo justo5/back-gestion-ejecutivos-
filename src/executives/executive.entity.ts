@@ -12,8 +12,8 @@ export class Executive {
   @Column({ nullable: true })
   imageUrl: string;
 
-  @Column({ nullable: true })
-  squad: string;
+  @Column({ type: 'varchar', nullable: true })
+  squad: string | null;
 
   @OneToMany(() => Client, (client) => client.executive)
   clients: Client[];
