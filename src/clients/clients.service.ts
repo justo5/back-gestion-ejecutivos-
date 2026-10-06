@@ -1,6 +1,6 @@
 import { BadRequestException, ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { EntityManager, Repository } from 'typeorm';
 import { Client } from './client.entity';
 import { ClientTodo } from './client-todo.entity';
 import { Cobro } from '../cobros/cobro.entity';
@@ -189,7 +189,12 @@ export class ClientsService {
   // Ejecutivos can only ever create clients under their own executiveId.
   // Admins must pick a target executiveId, since they aren't tied to one
   // themselves.
-  async createClient(dto: CreateClientDto, user: AuthUser) {
+  // `manager` es opcional: permite correr el alta dentro de una transacción
+  // de quien llama (ej. la conversión de un lead, que además actualiza el lead).
+  async createClient(dto: CreateClientDto, user: AuthUser, manager?: EntityManager) {
+    const clientsRepo = manager ? manager.getRepository(Client) : this.clientsRepo;
+    const cobrosRepo = manager ? manager.getRepository(Cobro) : this.cobrosRepo;
+
     let executiveId: string;
     if (user.role === 'admin') {
       if (!dto.executiveId) {
@@ -203,7 +208,7 @@ export class ClientsService {
       executiveId = user.executiveId;
     }
 
-    const client = this.clientsRepo.create({
+    const client = clientsRepo.create({
       executiveId,
       name: dto.name,
       fanpage: dto.fanpage ?? null,
@@ -218,13 +223,13 @@ export class ClientsService {
       contactDay: dto.contactDay ?? null,
       data: dto.data ?? {},
     });
-    const saved = await this.clientsRepo.save(client);
+    const saved = await clientsRepo.save(client);
 
     // Si el form eligió un plan del desplegable, se crea el cobro asociado
     // apuntando a ese plan de configuración.
     if (dto.planId != null) {
-      await this.cobrosRepo.save(
-        this.cobrosRepo.create({ clientId: saved.id, planId: dto.planId }),
+      await cobrosRepo.save(
+        cobrosRepo.create({ clientId: saved.id, planId: dto.planId }),
       );
     }
 

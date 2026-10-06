@@ -1,14 +1,12 @@
 import { NestFactory } from '@nestjs/core';
-import { ValidationPipe } from '@nestjs/common';
 import { AppModule } from './app.module';
+import { configureApp } from './app.setup';
 
 async function bootstrap() {
-  const app = await NestFactory.create(AppModule);
-  app.enableCors();
-  // En VPS, restringir el origen al dominio del front en producción:
-  // app.enableCors({ origin: 'https://tu-dominio-front.com', credentials: true });
-  app.useGlobalPipes(new ValidationPipe({ whitelist: true, transform: true }));
-  app.setGlobalPrefix('api');
+  // rawBody: el webhook de la landing (POST /api/webhooks/vb) verifica la
+  // firma HMAC sobre los bytes exactos del body, no sobre el JSON parseado.
+  const app = await NestFactory.create(AppModule, { rawBody: true });
+  configureApp(app);
   await app.listen(process.env.PORT ?? 3000);
 }
 bootstrap();

@@ -29,6 +29,8 @@ services:
       ADMIN_EMAIL: admin@empresa.com
       ADMIN_PASSWORD: ic8DqTG0VTU86KLegg8Z
       PORT: 3000
+      # Se toma del .env de esta carpeta (no se escribe acá): lo comparte vb-api.
+      VB_WEBHOOK_SECRET: ${VB_WEBHOOK_SECRET}
     networks:
       - gestion-ejecutivos-net
 
