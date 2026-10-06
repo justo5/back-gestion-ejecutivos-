@@ -5,7 +5,7 @@ services:
     restart: unless-stopped
     environment:
       POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: FCMOLvyg1ZsbFCRvD9Y1
+      POSTGRES_PASSWORD: ${DB_PASSWORD:?Falta DB_PASSWORD en .env}
       POSTGRES_DB: gestion_ejecutivos
     volumes:
       - gestion-ejecutivos-db-data:/var/lib/postgresql/data
@@ -18,18 +18,19 @@ services:
     restart: unless-stopped
     depends_on:
       - postgres
+    # Los secretos se toman del .env de esta carpeta (no se escriben acá).
+    # VB_WEBHOOK_SECRET lo comparte vb-api.
     environment:
       DB_HOST: postgres
       DB_PORT: 5432
       DB_USER: postgres
-      DB_PASSWORD: FCMOLvyg1ZsbFCRvD9Y1
+      DB_PASSWORD: ${DB_PASSWORD:?Falta DB_PASSWORD en .env}
       DB_NAME: gestion_ejecutivos
       DB_SYNC: "true"
-      JWT_SECRET: b166d22f55b533d03b46d87158bc1dc467b06cffc94791684d03d82824d67b62
+      JWT_SECRET: ${JWT_SECRET:?Falta JWT_SECRET en .env}
       ADMIN_EMAIL: admin@empresa.com
-      ADMIN_PASSWORD: ic8DqTG0VTU86KLegg8Z
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD:?Falta ADMIN_PASSWORD en .env}
       PORT: 3000
-      # Se toma del .env de esta carpeta (no se escribe acá): lo comparte vb-api.
       VB_WEBHOOK_SECRET: ${VB_WEBHOOK_SECRET}
     networks:
       - gestion-ejecutivos-net
