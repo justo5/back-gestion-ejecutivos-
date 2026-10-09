@@ -4,6 +4,8 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { randomUUID } from 'crypto';
 import { In, Like, MoreThan, Repository } from 'typeorm';
 import { Client } from '../clients/client.entity';
+import { clientPlanId } from '../cobros/plan-match';
+import { Plan } from '../cobros/plan.entity';
 import { Executive } from '../executives/executive.entity';
 import { TIMEZONE, addDays, addMonths, maxDate, today } from './dates';
 import { PlanTask } from './plan-task.entity';
@@ -46,6 +48,7 @@ export class RecurringService implements OnApplicationBootstrap {
     @InjectRepository(RecurringOccurrence) private occurrencesRepo: Repository<RecurringOccurrence>,
     @InjectRepository(Client) private clientsRepo: Repository<Client>,
     @InjectRepository(Executive) private executivesRepo: Repository<Executive>,
+    @InjectRepository(Plan) private plansRepo: Repository<Plan>,
     private tasks: TasksService,
   ) {}
 
@@ -58,7 +61,7 @@ export class RecurringService implements OnApplicationBootstrap {
   // las generadas que todavía no llegaron a su fecha, para recalcularlas.
   @Cron('5 0 * * *', { timeZone: TIMEZONE })
   async syncAll({ resetFuture = false } = {}): Promise<void> {
-    const planTasks = await this.planTasksRepo.find();
+    const [planTasks, plans] = await Promise.all([this.planTasksRepo.find(), this.plansRepo.find()]);
     const [clients, executives] = await Promise.all([
       this.clientsRepo.find({ relations: ['cobro'] }),
       this.executivesRepo.find({ select: { id: true } }),
@@ -68,7 +71,7 @@ export class RecurringService implements OnApplicationBootstrap {
       created += await this.sync(this.generalTarget(executive.id, planTasks), resetFuture);
     }
     for (const client of clients) {
-      created += await this.sync(this.clientTarget(client, planTasks), resetFuture);
+      created += await this.sync(this.clientTarget(client, planTasks, plans), resetFuture);
     }
     if (created) this.logger.log(`Se generaron ${created} tareas automáticas`);
   }
@@ -77,26 +80,27 @@ export class RecurringService implements OnApplicationBootstrap {
   // traspaso): recalcula lo que todavía no llegó a su fecha.
   async syncClients(clientIds: string[], { resetFuture = true } = {}): Promise<void> {
     if (!clientIds.length) return;
-    const planTasks = await this.planTasksRepo.find();
+    const [planTasks, plans] = await Promise.all([this.planTasksRepo.find(), this.plansRepo.find()]);
     const clients = await this.clientsRepo.find({ where: { id: In(clientIds) }, relations: ['cobro'] });
     for (const client of clients) {
-      await this.sync(this.clientTarget(client, planTasks), resetFuture);
+      await this.sync(this.clientTarget(client, planTasks, plans), resetFuture);
     }
   }
 
   // Después de que un ejecutivo cambia sus tareas automáticas: su General y
   // su cartera.
   async syncExecutive(executiveId: string, { resetFuture = true } = {}): Promise<void> {
-    const planTasks = await this.planTasksRepo.find();
+    const [planTasks, plans] = await Promise.all([this.planTasksRepo.find(), this.plansRepo.find()]);
     await this.sync(this.generalTarget(executiveId, planTasks), resetFuture);
     const clients = await this.clientsRepo.find({ where: { executiveId }, relations: ['cobro'] });
     for (const client of clients) {
-      await this.sync(this.clientTarget(client, planTasks), resetFuture);
+      await this.sync(this.clientTarget(client, planTasks, plans), resetFuture);
     }
   }
 
-  private clientTarget(client: Client, planTasks: PlanTask[]): Target {
-    const planId = client.cobro?.planId ?? null;
+  private clientTarget(client: Client, planTasks: PlanTask[], plans: Plan[]): Target {
+    // El mismo plan con el que se le cobra en Cobros.
+    const planId = clientPlanId(client, plans);
     const eligible = client.active && !!client.contactDay && !client.deletedAt && planId !== null;
     return {
       key: client.id,

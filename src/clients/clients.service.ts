@@ -9,6 +9,8 @@ import { CreateClientDto } from './dto/create-client.dto';
 import { UpdateClientExtrasDto } from './dto/update-client-extras.dto';
 import { UpdateBajaDto } from './dto/update-baja.dto';
 import { RecurringService } from '../tasks/recurring.service';
+import { Plan } from '../cobros/plan.entity';
+import { matchPlan } from '../cobros/plan-match';
 
 @Injectable()
 export class ClientsService {
@@ -43,10 +45,11 @@ export class ClientsService {
 
   async updateClient(clientId: string, dto: import('./dto/update-client.dto').UpdateClientDto, user: AuthUser) {
     const client = await this.findOwnedClient(clientId, user);
-    // El ciclo de las tareas automáticas es el de cobro: depende de estos dos.
+    // Las tareas automáticas dependen del ciclo de cobro y del plan de Cobros.
     const cycleChanged =
       (dto.contactDay !== undefined && dto.contactDay !== client.contactDay) ||
-      (dto.active !== undefined && dto.active !== client.active);
+      (dto.active !== undefined && dto.active !== client.active) ||
+      (dto.plan !== undefined && dto.plan !== client.plan);
 
     Object.assign(client, {
       ...(dto.name !== undefined && { name: dto.name }),
@@ -63,8 +66,22 @@ export class ClientsService {
     });
 
     const saved = await this.clientsRepo.save(client);
+    if (dto.plan !== undefined) await this.syncCobroPlan(client.id, client.plan);
     if (cycleChanged) await this.recurring.syncClients([client.id]);
     return saved;
+  }
+
+  // El plan del cliente es el de su texto (el que usa Cobros): el cobro se
+  // alinea para que no quede apuntando a otro plan.
+  private async syncCobroPlan(clientId: string, planText: string | null) {
+    const plan = matchPlan(planText, await this.clientsRepo.manager.find(Plan));
+    const planId = plan?.id ?? null;
+    const cobro = await this.cobrosRepo.findOne({ where: { clientId } });
+    if (cobro) {
+      if (cobro.planId !== planId) await this.cobrosRepo.update({ id: cobro.id }, { planId });
+    } else if (planId !== null) {
+      await this.cobrosRepo.save(this.cobrosRepo.create({ clientId, planId }));
+    }
   }
 
   async updateCobro(clientId: string, dto: UpdateCobroDto, user: AuthUser) {
@@ -88,7 +105,12 @@ export class ClientsService {
     if (dto.ivaByMonth !== undefined) cobro.ivaByMonth = dto.ivaByMonth;
     cobro.updatedAt = new Date();
     const saved = await this.cobrosRepo.save(cobro);
-    if (planChanged) await this.recurring.syncClients([clientId]);
+    if (planChanged) {
+      // El plan que cuenta es el texto del cliente (Cobros, Tareas): se alinea.
+      const plan = cobro.planId === null ? null : await this.clientsRepo.manager.findOneBy(Plan, { id: cobro.planId });
+      await this.clientsRepo.update({ id: clientId }, { plan: plan?.name ?? null });
+      await this.recurring.syncClients([clientId]);
+    }
     return saved;
   }
 
@@ -196,11 +218,19 @@ export class ClientsService {
       executiveId = user.executiveId;
     }
 
+    // Cliente y cobro quedan con el mismo plan: el elegido en el desplegable
+    // (planId) se guarda también como texto, que es lo que muestra Cobros, y
+    // un texto que matchea un plan deja el cobro apuntando a ese plan.
+    const plans = await clientsRepo.manager.find(Plan);
+    const chosen = dto.planId != null ? plans.find((p) => p.id === dto.planId) : undefined;
+    const planText = dto.plan?.trim() || chosen?.name || null;
+    const planId = dto.planId ?? matchPlan(planText, plans)?.id ?? null;
+
     const client = clientsRepo.create({
       executiveId,
       name: dto.name,
       fanpage: dto.fanpage ?? null,
-      plan: dto.plan ?? null,
+      plan: planText,
       country: dto.country ?? null,
       sexo: dto.sexo ?? null,
       edad: dto.edad ?? null,
@@ -213,12 +243,8 @@ export class ClientsService {
     });
     const saved = await clientsRepo.save(client);
 
-    // Si el form eligió un plan del desplegable, se crea el cobro asociado
-    // apuntando a ese plan de configuración.
-    if (dto.planId != null) {
-      await cobrosRepo.save(
-        cobrosRepo.create({ clientId: saved.id, planId: dto.planId }),
-      );
+    if (planId !== null) {
+      await cobrosRepo.save(cobrosRepo.create({ clientId: saved.id, planId }));
     }
 
     if (!manager) await this.recurring.syncClients([saved.id]);

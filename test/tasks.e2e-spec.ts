@@ -124,7 +124,7 @@ describe('Tareas (e2e)', () => {
 
   // Cliente activo, con plan y día de inicio: tiene ciclo de cobro.
   async function clientWithCycle(executive: Executive, plan: Plan, name: string, contactDay = addDays(today(), -5)) {
-    const client = await ds.getRepository(Client).save({ executiveId: executive.id, name, active: true, contactDay });
+    const client = await ds.getRepository(Client).save({ executiveId: executive.id, name, plan: plan.name, active: true, contactDay });
     await ds.getRepository(Cobro).save({ clientId: client.id, planId: plan.id });
     return client;
   }

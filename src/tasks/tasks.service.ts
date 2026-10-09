@@ -4,6 +4,8 @@ import { isUUID } from 'class-validator';
 import { FindOptionsWhere, In, IsNull, Not, Repository } from 'typeorm';
 import { AuthUser } from '../auth/current-user.decorator';
 import { Client } from '../clients/client.entity';
+import { clientPlan } from '../cobros/plan-match';
+import { Plan } from '../cobros/plan.entity';
 import { CreateTaskDto } from './dto/create-task.dto';
 import { MoveTaskDto } from './dto/move-task.dto';
 import { UpdateTaskDto } from './dto/update-task.dto';
@@ -21,7 +23,9 @@ export interface TaskFolder {
   name: string;
   executiveName: string;
   planId: number | null;
+  // El mismo plan que se ve en Cobros.
   planName: string | null;
+  imageUrl: string | null;
   // Inicio del ciclo de cobro (y de las tareas automáticas). null si el
   // cliente no está activo o no tiene día de inicio: igual que en Cobros, sin
   // eso no hay ciclo.
@@ -47,29 +51,36 @@ export class TasksService {
   constructor(
     @InjectRepository(Task) private tasksRepo: Repository<Task>,
     @InjectRepository(Client) private clientsRepo: Repository<Client>,
+    @InjectRepository(Plan) private plansRepo: Repository<Plan>,
     private planTasks: PlanTasksService,
   ) {}
 
   // Todo lo que necesita el tablero en una sola llamada.
   async state(user: AuthUser) {
-    const [clients, tasks, planTasks] = await Promise.all([
+    const [clients, tasks, planTasks, plans] = await Promise.all([
       this.clientsRepo.find({
         where: user.role === 'admin' ? { deletedAt: IsNull() } : { executiveId: this.ownExecutiveId(user), deletedAt: IsNull() },
-        relations: ['executive', 'cobro', 'cobro.plan'],
+        relations: ['executive', 'cobro'],
       }),
       this.tasksRepo.find({ where: this.scope(user), order: { position: 'ASC', createdAt: 'DESC' } }),
       this.planTasks.findForUser(user),
+      this.plansRepo.find(),
     ]);
 
     const folders: TaskFolder[] = clients
-      .map((c) => ({
-        id: c.id,
-        name: displayName(c),
-        executiveName: c.executive?.name ?? '',
-        planId: c.cobro?.planId ?? null,
-        planName: c.cobro?.plan?.name ?? null,
-        cycleStart: c.active ? c.contactDay : null,
-      }))
+      .map((c) => {
+        const plan = clientPlan(c, plans);
+        return {
+          id: c.id,
+          name: displayName(c),
+          executiveName: c.executive?.name ?? '',
+          planId: plan?.id ?? null,
+          // El mismo plan que Cobros: el configurado que matchea el texto del cliente.
+          planName: plan?.name ?? null,
+          imageUrl: c.imageUrl || null,
+          cycleStart: c.active ? c.contactDay : null,
+        };
+      })
       .sort((a, b) => a.name.localeCompare(b.name, 'es'));
 
     return { today: today(), folders, tasks: tasks.map((t) => this.toView(t)), planTasks };
