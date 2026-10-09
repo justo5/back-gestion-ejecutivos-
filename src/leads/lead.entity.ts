@@ -8,8 +8,10 @@ import { Plan } from '../cobros/plan.entity';
 export const LEAD_STATUS_VALUES = ['nuevo', 'contactado', 'convertido', 'descartado'] as const;
 export type LeadStatus = (typeof LEAD_STATUS_VALUES)[number];
 
-// Rangos de inversión mensual que ofrece el formulario de la landing.
-export const LEAD_INVERSION_VALUES = ['menos-300', '300-700', '700-1500', 'mas-1500'] as const;
+// Rangos de inversión mensual que ofrece el formulario de la landing. La
+// columna es varchar (sin enum ni CHECK), así que sumar un valor no requiere
+// migración; solo actualizar esta lista y las etiquetas del front.
+export const LEAD_INVERSION_VALUES = ['cero', 'menos-300', '300-700', '700-1500', 'mas-1500'] as const;
 export type LeadInversion = (typeof LEAD_INVERSION_VALUES)[number];
 
 // Solicitud que llega desde el formulario público de la landing de Vamos Bien,

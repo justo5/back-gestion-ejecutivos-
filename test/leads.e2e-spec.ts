@@ -53,6 +53,7 @@ function aplicacion(overrides: Record<string, unknown> = {}) {
     rubro: 'estética',
     inversion: '300-700',
     consentimientoAt: '2026-10-06T18:49:07.982Z',
+    utm: { source: 'instagram', medium: null, campaign: null, content: null, term: null },
     ...overrides,
   };
 }
@@ -167,6 +168,30 @@ describe('Leads (e2e)', () => {
       delete process.env.VB_WEBHOOK_SECRET;
       const raw = JSON.stringify(aplicacion());
       await postWebhook(raw).expect(503);
+    });
+
+    it('inversion "cero" (opción "Nada") → 200 y se guarda', async () => {
+      await postWebhook(JSON.stringify(aplicacion({ inversion: 'cero' }))).expect(200);
+      const [lead] = await ds.getRepository(Lead).find();
+      expect(lead.inversion).toBe('cero');
+    });
+
+    it('acepta utm con todos los campos en null o sin utm', async () => {
+      const utmNull = { source: null, medium: null, campaign: null, content: null, term: null };
+      await postWebhook(JSON.stringify(aplicacion({ id: 1, utm: utmNull }))).expect(200);
+      const { utm, ...sinUtm } = aplicacion({ id: 2 });
+      await postWebhook(JSON.stringify(sinUtm)).expect(200);
+      expect(await ds.getRepository(Lead).count()).toBe(2);
+    });
+
+    it('el 400 dice qué campo falló y por qué, sin datos personales', async () => {
+      const res = await postWebhook(JSON.stringify(aplicacion({ inversion: 'mucha', nombre: 'x'.repeat(81) }))).expect(400);
+      const text = JSON.stringify(res.body);
+      expect(text.slice(0, 300)).toContain('inversion');
+      expect(text).toContain('nombre');
+      expect(text).not.toContain('mucha');
+      expect(text).not.toContain('xxxx');
+      expect(text).not.toContain('+598');
     });
 
     it('body inválido → 400', async () => {
