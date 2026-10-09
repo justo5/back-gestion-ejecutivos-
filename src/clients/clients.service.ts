@@ -2,35 +2,30 @@ import { BadRequestException, ForbiddenException, Injectable, NotFoundException 
 import { InjectRepository } from '@nestjs/typeorm';
 import { EntityManager, Repository } from 'typeorm';
 import { Client } from './client.entity';
-import { ClientTodo } from './client-todo.entity';
 import { Cobro } from '../cobros/cobro.entity';
 import { AuthUser } from '../auth/current-user.decorator';
 import { UpdateCobroDto } from './dto/update-cobro.dto';
 import { CreateClientDto } from './dto/create-client.dto';
 import { UpdateClientExtrasDto } from './dto/update-client-extras.dto';
 import { UpdateBajaDto } from './dto/update-baja.dto';
-import { CreateTodoDto } from './dto/create-todo.dto';
-import { UpdateTodoDto } from './dto/update-todo.dto';
+import { RecurringService } from '../tasks/recurring.service';
 
 @Injectable()
 export class ClientsService {
   constructor(
     @InjectRepository(Client) private clientsRepo: Repository<Client>,
     @InjectRepository(Cobro) private cobrosRepo: Repository<Cobro>,
-    @InjectRepository(ClientTodo) private clientTodosRepo: Repository<ClientTodo>,
+    private recurring: RecurringService,
   ) {}
 
   // Same rule as ExecutivesService: an ejecutivo can only ever see clients
   // tied to their own executiveId, regardless of what's requested.
   async findAllForUser(user: AuthUser) {
     const where = user.role === 'admin' ? {} : { executiveId: user.executiveId ?? '__none__' };
-    const clients = await this.clientsRepo.find({
+    return this.clientsRepo.find({
       where,
-      relations: ['executive', 'cobro', 'cobro.plan', 'todos'],
+      relations: ['executive', 'cobro', 'cobro.plan'],
     });
-    // Más nuevo primero, como quedaban en el localStorage viejo.
-    clients.forEach((c) => c.todos?.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime()));
-    return clients;
   }
 
   // Centraliza la regla de acceso usada por todos los endpoints de :id: un
@@ -48,6 +43,10 @@ export class ClientsService {
 
   async updateClient(clientId: string, dto: import('./dto/update-client.dto').UpdateClientDto, user: AuthUser) {
     const client = await this.findOwnedClient(clientId, user);
+    // El ciclo de las tareas automáticas es el de cobro: depende de estos dos.
+    const cycleChanged =
+      (dto.contactDay !== undefined && dto.contactDay !== client.contactDay) ||
+      (dto.active !== undefined && dto.active !== client.active);
 
     Object.assign(client, {
       ...(dto.name !== undefined && { name: dto.name }),
@@ -63,7 +62,9 @@ export class ClientsService {
       ...(dto.contactDay !== undefined && { contactDay: dto.contactDay }),
     });
 
-    return this.clientsRepo.save(client);
+    const saved = await this.clientsRepo.save(client);
+    if (cycleChanged) await this.recurring.syncClients([client.id]);
+    return saved;
   }
 
   async updateCobro(clientId: string, dto: UpdateCobroDto, user: AuthUser) {
@@ -77,6 +78,8 @@ export class ClientsService {
     if (!cobro) {
       cobro = this.cobrosRepo.create({ clientId });
     }
+    // El plan decide qué tareas automáticas le tocan al cliente.
+    const planChanged = dto.planId !== undefined && dto.planId !== (cobro.planId ?? null);
     if (dto.planId !== undefined) cobro.planId = dto.planId;
     if (dto.collectedByMonth !== undefined) cobro.collectedByMonth = dto.collectedByMonth;
     if (dto.paidMonths !== undefined) cobro.paidMonths = dto.paidMonths;
@@ -84,7 +87,9 @@ export class ClientsService {
     if (dto.gastosByMonth !== undefined) cobro.gastosByMonth = dto.gastosByMonth;
     if (dto.ivaByMonth !== undefined) cobro.ivaByMonth = dto.ivaByMonth;
     cobro.updatedAt = new Date();
-    return this.cobrosRepo.save(cobro);
+    const saved = await this.cobrosRepo.save(cobro);
+    if (planChanged) await this.recurring.syncClients([clientId]);
+    return saved;
   }
 
   // Foto del cliente, igual que ExecutivesService#updateImage pero acá
@@ -104,6 +109,8 @@ export class ClientsService {
     if (client.deletedAt) return;
     client.deletedAt = new Date();
     await this.clientsRepo.save(client);
+    // Las automáticas que todavía no llegaron a su fecha ya no corresponden.
+    await this.recurring.syncClients([client.id]);
   }
 
   // --- Bajas: editar fecha/motivo y eliminar la baja ---
@@ -137,12 +144,13 @@ export class ClientsService {
     client.deletedAt = null;
     client.deletedReason = null;
     await this.clientsRepo.save(client);
+    await this.recurring.syncClients([client.id]);
   }
 
   // Borrado definitivo, para clientes mal cargados o que nunca terminaron
   // entrando. A diferencia del soft delete, esto sí borra la fila y arrastra
   // en cascada (a nivel base) su Cobro con todo el historial de pagos y sus
-  // To Do, sin vuelta atrás. Por eso solo se permite sobre clientes que ya
+  // tareas, sin vuelta atrás. Por eso solo se permite sobre clientes que ya
   // están dados de baja: nunca se salta directo de "cliente vigente" a borrado.
   async deleteClientPermanently(clientId: string, user: AuthUser) {
     const client = await this.findOwnedClient(clientId, user);
@@ -162,35 +170,15 @@ export class ClientsService {
     return this.clientsRepo.save(client);
   }
 
-  // --- To Do del cliente ---
-
-  async addTodo(clientId: string, dto: CreateTodoDto, user: AuthUser) {
-    await this.findOwnedClient(clientId, user);
-    const todo = this.clientTodosRepo.create({ clientId, text: dto.text.trim() });
-    return this.clientTodosRepo.save(todo);
-  }
-
-  async updateTodo(clientId: string, todoId: string, dto: UpdateTodoDto, user: AuthUser) {
-    await this.findOwnedClient(clientId, user);
-    const todo = await this.clientTodosRepo.findOne({ where: { id: todoId, clientId } });
-    if (!todo) throw new NotFoundException('Tarea no encontrada');
-    if (dto.done !== undefined) todo.done = dto.done;
-    if (dto.text !== undefined) todo.text = dto.text.trim();
-    return this.clientTodosRepo.save(todo);
-  }
-
-  async deleteTodo(clientId: string, todoId: string, user: AuthUser) {
-    await this.findOwnedClient(clientId, user);
-    const todo = await this.clientTodosRepo.findOne({ where: { id: todoId, clientId } });
-    if (!todo) throw new NotFoundException('Tarea no encontrada');
-    await this.clientTodosRepo.remove(todo);
-  }
-
   // Ejecutivos can only ever create clients under their own executiveId.
   // Admins must pick a target executiveId, since they aren't tied to one
   // themselves.
   // `manager` es opcional: permite correr el alta dentro de una transacción
   // de quien llama (ej. la conversión de un lead, que además actualiza el lead).
+  // En ese caso no se generan las tareas automáticas: antes del commit el
+  // cliente no existe para el resto de la app. Hoy no hace falta (un lead
+  // convertido no tiene día de inicio, así que todavía no tiene ciclo); si
+  // algún día lo tiene, quien llama debe usar RecurringService.syncClients.
   async createClient(dto: CreateClientDto, user: AuthUser, manager?: EntityManager) {
     const clientsRepo = manager ? manager.getRepository(Client) : this.clientsRepo;
     const cobrosRepo = manager ? manager.getRepository(Cobro) : this.cobrosRepo;
@@ -233,6 +221,7 @@ export class ClientsService {
       );
     }
 
+    if (!manager) await this.recurring.syncClients([saved.id]);
     return saved;
   }
 }

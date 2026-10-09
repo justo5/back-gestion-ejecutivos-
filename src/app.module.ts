@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
+import { ScheduleModule } from '@nestjs/schedule';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { AuthModule } from './auth/auth.module';
 import { UsersModule } from './users/users.module';
@@ -9,19 +10,34 @@ import { CobrosModule } from './cobros/cobros.module';
 import { RubrosModule } from './rubros/rubros.module';
 import { GoalsModule } from './goals/goals.module';
 import { LeadsModule } from './leads/leads.module';
+import { TasksModule } from './tasks/tasks.module';
 import { User } from './users/user.entity';
 import { Executive } from './executives/executive.entity';
 import { Client } from './clients/client.entity';
-import { ClientTodo } from './clients/client-todo.entity';
 import { Plan } from './cobros/plan.entity';
 import { Cobro } from './cobros/cobro.entity';
 import { Rubro } from './rubros/rubro.entity';
 import { DashboardGoal } from './goals/dashboard-goal.entity';
 import { Lead } from './leads/lead.entity';
+import { Task } from './tasks/task.entity';
+import { PlanTask } from './tasks/plan-task.entity';
+import { RecurringOccurrence } from './tasks/recurring-occurrence.entity';
 
 // Exportado para que los tests e2e levanten la misma lista de entidades
 // contra su base en memoria.
-export const ENTITIES = [User, Executive, Client, ClientTodo, Plan, Cobro, Rubro, DashboardGoal, Lead];
+export const ENTITIES = [
+  User,
+  Executive,
+  Client,
+  Plan,
+  Cobro,
+  Rubro,
+  DashboardGoal,
+  Lead,
+  Task,
+  PlanTask,
+  RecurringOccurrence,
+];
 
 @Module({
   imports: [
@@ -40,6 +56,8 @@ export const ENTITIES = [User, Executive, Client, ClientTodo, Plan, Cobro, Rubro
         synchronize: config.get('DB_SYNC', 'true') === 'true',
       }),
     }),
+    // Cron diario que genera las tareas automáticas (ver RecurringService).
+    ScheduleModule.forRoot(),
     AuthModule,
     UsersModule,
     ExecutivesModule,
@@ -48,6 +66,7 @@ export const ENTITIES = [User, Executive, Client, ClientTodo, Plan, Cobro, Rubro
     RubrosModule,
     GoalsModule,
     LeadsModule,
+    TasksModule,
   ],
 })
 export class AppModule {}

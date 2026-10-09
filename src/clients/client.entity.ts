@@ -1,7 +1,6 @@
-import { Column, Entity, JoinColumn, ManyToOne, OneToMany, OneToOne, PrimaryGeneratedColumn } from 'typeorm';
+import { Column, Entity, JoinColumn, ManyToOne, OneToOne, PrimaryGeneratedColumn } from 'typeorm';
 import { Executive } from '../executives/executive.entity';
 import { Cobro } from '../cobros/cobro.entity';
-import { ClientTodo } from './client-todo.entity';
 
 // Valores válidos de statusOverride. String (no enum de Postgres) a propósito:
 // agregar un estado nuevo el día de mañana es un cambio de código, no un
@@ -92,9 +91,6 @@ export class Client {
   // el frontend arma uno propio si no hay override).
   @Column({ type: 'varchar', nullable: true })
   linkOverride: string | null;
-
-  @OneToMany(() => ClientTodo, (todo) => todo.client)
-  todos: ClientTodo[];
 
   @Column({ type: 'timestamptz', default: () => 'now()' })
   createdAt: Date;

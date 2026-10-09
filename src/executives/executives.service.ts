@@ -16,6 +16,7 @@ import { ImportExecutivesDto } from './dto/import-executives.dto';
 import { CreateExecutiveDto } from './dto/create-executive.dto';
 import { UpdateExecutiveDto } from './dto/update-executive.dto';
 import { TransferClientsDto } from './dto/transfer-clients.dto';
+import { RecurringService } from '../tasks/recurring.service';
 
 @Injectable()
 export class ExecutivesService {
@@ -23,6 +24,7 @@ export class ExecutivesService {
     @InjectRepository(Executive) private executivesRepo: Repository<Executive>,
     @InjectRepository(Client) private clientsRepo: Repository<Client>,
     @InjectRepository(User) private usersRepo: Repository<User>,
+    private recurring: RecurringService,
   ) {}
 
   // Ejecutivos only ever see their own record; admins see everyone. Enforced
@@ -130,8 +132,10 @@ export class ExecutivesService {
     });
   }
 
-  // Traspasa clientes de un ejecutivo a otro. El historial (cobros, to do,
+  // Traspasa clientes de un ejecutivo a otro. El historial (cobros, tareas,
   // notas) viaja con el cliente porque cuelga del clientId, no del ejecutivo.
+  // Las tareas automáticas futuras se recalculan: las propias de cada
+  // ejecutivo (ver PlanTask) son del nuevo, no del anterior.
   async transferClients(fromId: string, dto: TransferClientsDto) {
     if (fromId === dto.targetExecutiveId) {
       throw new BadRequestException('El ejecutivo de origen y el de destino son el mismo');
@@ -148,13 +152,16 @@ export class ExecutivesService {
         throw new BadRequestException('Algunos clientes no pertenecen al ejecutivo de origen');
       }
       await this.clientsRepo.update({ id: In(ids) }, { executiveId: dto.targetExecutiveId });
+      await this.recurring.syncClients(ids);
       return { transferred: ids.length };
     }
 
+    const ids = (await this.clientsRepo.find({ where: { executiveId: fromId }, select: { id: true } })).map((c) => c.id);
     const result = await this.clientsRepo.update(
       { executiveId: fromId },
       { executiveId: dto.targetExecutiveId },
     );
+    await this.recurring.syncClients(ids);
     return { transferred: result.affected ?? 0 };
   }
 
