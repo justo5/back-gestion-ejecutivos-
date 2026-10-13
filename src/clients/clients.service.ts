@@ -131,8 +131,16 @@ export class ClientsService {
     const saved = await this.cobrosRepo.save(cobro);
     if (planChanged) {
       // El plan que cuenta es el texto del cliente (Cobros, Tareas): se alinea.
+      // Igual que en updateClient, el cambio queda en planHistory para no
+      // pisar el plan de los meses anteriores.
       const plan = cobro.planId === null ? null : await this.clientsRepo.manager.findOneBy(Plan, { id: cobro.planId });
-      await this.clientsRepo.update({ id: clientId }, { plan: plan?.name ?? null });
+      const planText = plan?.name ?? null;
+      if (planText !== (client.plan ?? null)) {
+        await this.clientsRepo.update(
+          { id: clientId },
+          { plan: planText, planHistory: this.recordPlanChange(client, planText) },
+        );
+      }
       await this.recurring.syncClients([clientId]);
     }
     return saved;
