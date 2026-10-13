@@ -51,6 +51,10 @@ export class ClientsService {
       (dto.active !== undefined && dto.active !== client.active) ||
       (dto.plan !== undefined && dto.plan !== client.plan);
 
+    if (dto.plan !== undefined && (dto.plan ?? null) !== (client.plan ?? null)) {
+      client.planHistory = this.recordPlanChange(client, dto.plan ?? null);
+    }
+
     Object.assign(client, {
       ...(dto.name !== undefined && { name: dto.name }),
       ...(dto.fanpage !== undefined && { fanpage: dto.fanpage }),
@@ -82,6 +86,26 @@ export class ClientsService {
     } else if (planId !== null) {
       await this.cobrosRepo.save(this.cobrosRepo.create({ clientId, planId }));
     }
+  }
+
+  // El plan nuevo rige desde el mes en curso (hora Argentina) en adelante; los
+  // meses anteriores conservan el plan que tenían, estén cobrados o no. La
+  // primera vez que cambia, el plan viejo se guarda en el mes anterior: como
+  // un mes sin clave <= él usa la clave más vieja, eso cubre todo el pasado.
+  private recordPlanChange(client: Client, newPlan: string | null): Record<string, string | null> {
+    const currentMonth = new Intl.DateTimeFormat('en-CA', {
+      timeZone: 'America/Argentina/Buenos_Aires',
+      year: 'numeric',
+      month: '2-digit',
+    }).format(new Date());
+    const [y, m] = currentMonth.split('-').map(Number);
+    const prev = new Date(Date.UTC(y, m - 2, 1));
+    const previousMonth = `${prev.getUTCFullYear()}-${String(prev.getUTCMonth() + 1).padStart(2, '0')}`;
+
+    const history = { ...(client.planHistory ?? {}) };
+    if (Object.keys(history).length === 0) history[previousMonth] = client.plan ?? null;
+    history[currentMonth] = newPlan;
+    return history;
   }
 
   async updateCobro(clientId: string, dto: UpdateCobroDto, user: AuthUser) {

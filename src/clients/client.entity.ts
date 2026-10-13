@@ -31,6 +31,14 @@ export class Client {
   @Column({ type: 'varchar', nullable: true })
   plan: string | null;
 
+  // Historial del plan por mes: yearMonth ("2026-10") desde el que rige cada
+  // plan. El plan de un mes M es el de la clave más grande <= M (o el de la
+  // clave más vieja si M es anterior a todas). Así cambiar el plan no pisa los
+  // meses anteriores, cobrados o no. `plan` sigue siendo siempre el vigente.
+  // null = nunca cambió, todos los meses usan `plan`. Ver ClientsService#updateClient.
+  @Column({ type: 'jsonb', nullable: true })
+  planHistory: Record<string, string | null> | null;
+
   // Client's country, e.g. "Argentina".
   @Column({ type: 'varchar', nullable: true })
   country: string | null;
