@@ -52,6 +52,7 @@ export class LeadsService {
         apellido: dto.apellido.trim(),
         contacto: dto.contacto.trim(),
         whatsapp: dto.whatsapp.trim(),
+        redes: dto.redes?.trim() || null,
         rubro: dto.rubro.trim(),
         inversion: dto.inversion as Lead['inversion'],
         planName: dto.plan.trim(),
@@ -136,6 +137,7 @@ export class LeadsService {
 
     if (dto.status !== undefined) lead.status = dto.status as Lead['status'];
     if (dto.notes !== undefined) lead.notes = dto.notes?.trim() || null;
+    if (dto.redes !== undefined) lead.redes = dto.redes?.trim() || null;
     if (dto.executiveId !== undefined) lead.executiveId = dto.executiveId;
     if (dto.planId !== undefined) lead.planId = dto.planId;
     await this.leadsRepo.save(lead);
@@ -177,6 +179,7 @@ export class LeadsService {
           planId,
           data: {
             whatsapp: lead.whatsapp,
+            redes: lead.redes,
             inversion: lead.inversion,
             leadId: lead.id,
             externalId: lead.externalId,

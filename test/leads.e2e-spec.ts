@@ -176,6 +176,19 @@ describe('Leads (e2e)', () => {
       expect(lead.inversion).toBe('cero');
     });
 
+    it('redes es opcional: se guarda si viene y queda en null si falta o viene vacío', async () => {
+      await postWebhook(JSON.stringify(aplicacion({ id: 1, redes: '  @ana.ok  ' }))).expect(200);
+      await postWebhook(JSON.stringify(aplicacion({ id: 2, redes: null }))).expect(200);
+      await postWebhook(JSON.stringify(aplicacion({ id: 3, redes: '   ' }))).expect(200);
+      await postWebhook(JSON.stringify(aplicacion({ id: 4 }))).expect(200);
+      const repo = ds.getRepository(Lead);
+      expect((await repo.findOneByOrFail({ externalId: 1 })).redes).toBe('@ana.ok');
+      for (const externalId of [2, 3, 4]) {
+        expect((await repo.findOneByOrFail({ externalId })).redes).toBeNull();
+      }
+      await postWebhook(JSON.stringify(aplicacion({ id: 5, redes: 'x'.repeat(501) }))).expect(400);
+    });
+
     it('acepta utm con todos los campos en null o sin utm', async () => {
       const utmNull = { source: null, medium: null, campaign: null, content: null, term: null };
       await postWebhook(JSON.stringify(aplicacion({ id: 1, utm: utmNull }))).expect(200);
@@ -276,6 +289,22 @@ describe('Leads (e2e)', () => {
       expect(res.body).toMatchObject({ status: 'contactado', notes: 'Le escribí' });
     });
 
+    it('un ejecutivo completa y borra las redes de su lead', async () => {
+      const res = await request(app.getHttpServer())
+        .patch(`/api/leads/${leadDeMarco.id}`)
+        .set(auth(marcoToken))
+        .send({ redes: ' @beto fb.com/beto ' })
+        .expect(200);
+      expect(res.body.redes).toBe('@beto fb.com/beto');
+
+      const borrado = await request(app.getHttpServer())
+        .patch(`/api/leads/${leadDeMarco.id}`)
+        .set(auth(marcoToken))
+        .send({ redes: '' })
+        .expect(200);
+      expect(borrado.body.redes).toBeNull();
+    });
+
     it('PATCH no acepta status convertido', async () => {
       await request(app.getHttpServer())
         .patch(`/api/leads/${leadDeMarco.id}`)
@@ -302,6 +331,7 @@ describe('Leads (e2e)', () => {
     });
 
     it('convert crea el cliente y el cobro, marca el lead y repetir → 409', async () => {
+      await ds.getRepository(Lead).update(leadDeMarco.id, { redes: '@beto' });
       const res = await request(app.getHttpServer())
         .post(`/api/leads/${leadDeMarco.id}/convert`)
         .set(auth(adminToken))
@@ -319,6 +349,7 @@ describe('Leads (e2e)', () => {
       });
       expect(client.data).toMatchObject({
         whatsapp: '+598 99 123 456',
+        redes: '@beto',
         inversion: '300-700',
         leadId: leadDeMarco.id,
         externalId: 2,

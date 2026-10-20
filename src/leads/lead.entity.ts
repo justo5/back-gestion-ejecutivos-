@@ -46,6 +46,12 @@ export class Lead {
   @Column({ type: 'varchar', length: 30 })
   whatsapp: string;
 
+  // Redes sociales (Instagram, Facebook, TikTok…), texto libre. Puede llegar
+  // opcional por el webhook y el ejecutivo lo completa o corrige desde el
+  // panel. null = sin dato. Al convertir pasa a Client.data.redes.
+  @Column({ type: 'varchar', length: 500, nullable: true })
+  redes: string | null;
+
   // Texto libre que escribió la persona; no tiene por qué coincidir con la
   // lista configurable de rubros.
   @Column({ type: 'varchar', length: 120 })

@@ -1,4 +1,4 @@
-import { IsIn, IsInt, IsISO8601, IsNotEmpty, IsPositive, IsString, MaxLength } from 'class-validator';
+import { IsIn, IsInt, IsISO8601, IsNotEmpty, IsOptional, IsPositive, IsString, MaxLength } from 'class-validator';
 import { LEAD_INVERSION_VALUES } from '../lead.entity';
 
 // Body del webhook "aplicacion.creada" que manda vb-api. El ValidationPipe
@@ -41,6 +41,12 @@ export class VbWebhookDto {
   @IsNotEmpty()
   @MaxLength(30)
   whatsapp: string;
+
+  // Opcional: la landing puede no mandarlo (o mandarlo en null).
+  @IsOptional()
+  @IsString()
+  @MaxLength(500)
+  redes?: string | null;
 
   @IsString()
   @IsNotEmpty()

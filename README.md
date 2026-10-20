@@ -256,7 +256,7 @@ Las solicitudes llegan desde el formulario público de la landing de Vamos Bien 
 | ------ | -------------------------- | ------------------------------------------------------------------------------------------------------------- |
 | GET    | `/leads?status=&executiveId=` | Admin: todas (filtra por `executiveId` si viene). Ejecutivo: solo las asignadas a él. Con `executive` y `plan` |
 | GET    | `/leads/count-new`         | `{ count }` de solicitudes visibles en estado `nuevo` (contador del menú)                                      |
-| PATCH  | `/leads/:id`               | `{ status?, notes? }` (`nuevo \| contactado \| descartado`). `executiveId` y `planId` solo el admin             |
+| PATCH  | `/leads/:id`               | `{ status?, notes?, redes? }` (`nuevo \| contactado \| descartado`). `executiveId` y `planId` solo el admin     |
 | POST   | `/leads/:id/convert` 👑    | Crea el cliente (y su cobro si hay plan) y marca la solicitud `convertido`. Body opcional `{ executiveId?, planId?, rubro? }`. `409` si ya estaba convertida |
 
 ### Webhook de la landing (público, firmado)
@@ -267,6 +267,7 @@ Las solicitudes llegan desde el formulario público de la landing de Vamos Bien 
 - `503` sin secreto configurado · `401` firma inválida o timestamp a más de 300 s · `400` body inválido · `200 { ok: true }` en el resto.
 - Idempotente por el `id` de la aplicación (`leads.externalId`, `ON CONFLICT DO NOTHING`): los reintentos de vb-api responden `200` sin duplicar.
 - Eventos distintos de `aplicacion.creada` responden `200` sin hacer nada.
+- `redes` (redes sociales, texto libre de hasta 500 caracteres) es opcional: puede faltar o venir en `null`. Desde el panel se completa o corrige con `PATCH /leads/:id`.
 - El plan se resuelve por nombre contra `plans` (sin distinguir mayúsculas ni espacios de más); si no coincide queda `planId = null`.
 
 ### Ejemplo
@@ -377,6 +378,7 @@ erDiagram
         string apellido
         string contacto
         string whatsapp
+        string redes "opcional"
         string rubro
         string inversion
         string planName

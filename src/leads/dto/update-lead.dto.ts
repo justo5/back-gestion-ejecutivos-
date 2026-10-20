@@ -15,6 +15,12 @@ export class UpdateLeadDto {
   @MaxLength(5000)
   notes?: string | null;
 
+  @IsOptional()
+  @ValidateIf((_, v) => v !== null)
+  @IsString()
+  @MaxLength(500)
+  redes?: string | null;
+
   // executiveId y planId solo los puede cambiar el admin (se valida en el service).
   @IsOptional()
   @ValidateIf((_, v) => v !== null)
