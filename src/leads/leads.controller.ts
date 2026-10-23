@@ -27,6 +27,13 @@ export class LeadsController {
     return this.service.countNew(user);
   }
 
+  // Franja de ejecutivos de Solicitudes: solicitudes asignadas a cada uno.
+  @Roles(UserRole.ADMIN)
+  @Get('count-by-executive')
+  countByExecutive() {
+    return this.service.countByExecutive();
+  }
+
   @Patch(':id')
   update(@Param('id', ParseUUIDPipe) id: string, @Body() dto: UpdateLeadDto, @CurrentUser() user: AuthUser) {
     return this.service.update(id, dto, user);

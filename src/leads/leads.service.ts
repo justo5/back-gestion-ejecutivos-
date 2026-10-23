@@ -108,6 +108,20 @@ export class LeadsService {
     return { count: await this.leadsRepo.count({ where }) };
   }
 
+  // Resumen del admin: cuántas solicitudes tiene asignadas cada ejecutivo
+  // (todas, sin importar el estado) y cuántas siguen en "nuevo".
+  async countByExecutive() {
+    const rows = await this.leadsRepo
+      .createQueryBuilder('lead')
+      .select('lead.executiveId', 'executiveId')
+      .addSelect('COUNT(*)', 'total')
+      .addSelect(`COUNT(*) FILTER (WHERE lead.status = 'nuevo')`, 'nuevo')
+      .where('lead.executiveId IS NOT NULL')
+      .groupBy('lead.executiveId')
+      .getRawMany<{ executiveId: string; total: string; nuevo: string }>();
+    return rows.map((r) => ({ executiveId: r.executiveId, total: Number(r.total), nuevo: Number(r.nuevo) }));
+  }
+
   // Regla de acceso de los endpoints de :id, igual que findOwnedClient: el
   // ejecutivo solo toca leads asignados a él, el admin cualquiera.
   private async findOwnedLead(leadId: string, user: AuthUser): Promise<Lead> {
