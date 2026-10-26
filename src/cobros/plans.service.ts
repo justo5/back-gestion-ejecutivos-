@@ -11,13 +11,14 @@ export class PlansService {
     return this.repo.find({ order: { id: 'ASC' } });
   }
 
-  async update(id: number, name: string, price: number) {
-    await this.repo.update(id, { name, price });
+  // prepaid sin mandar = no se toca (no se pisa con false).
+  async update(id: number, name: string, price: number, prepaid?: boolean) {
+    await this.repo.update(id, { name, price, ...(prepaid !== undefined && { prepaid }) });
     return this.repo.findOneBy({ id });
   }
 
-  create(name: string, price: number) {
-    return this.repo.save(this.repo.create({ name, price }));
+  create(name: string, price: number, prepaid = false) {
+    return this.repo.save(this.repo.create({ name, price, prepaid }));
   }
 
   async remove(id: number) {

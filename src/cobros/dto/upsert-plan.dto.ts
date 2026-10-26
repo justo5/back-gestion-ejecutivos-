@@ -1,5 +1,5 @@
 import { Type } from 'class-transformer';
-import { IsNumber, IsString, Min } from 'class-validator';
+import { IsBoolean, IsNumber, IsOptional, IsString, Min } from 'class-validator';
 
 export class UpsertPlanDto {
   @IsString()
@@ -9,4 +9,8 @@ export class UpsertPlanDto {
   @IsNumber()
   @Min(0)
   price: number;
+
+  @IsOptional()
+  @IsBoolean()
+  prepaid?: boolean;
 }

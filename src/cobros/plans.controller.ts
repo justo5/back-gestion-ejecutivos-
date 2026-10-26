@@ -19,13 +19,13 @@ export class PlansController {
   @Roles(UserRole.ADMIN)
   @Post()
   create(@Body() dto: UpsertPlanDto) {
-    return this.service.create(dto.name, dto.price);
+    return this.service.create(dto.name, dto.price, dto.prepaid);
   }
 
   @Roles(UserRole.ADMIN)
   @Put(':id')
   update(@Param('id') id: string, @Body() dto: UpsertPlanDto) {
-    return this.service.update(Number(id), dto.name, dto.price);
+    return this.service.update(Number(id), dto.name, dto.price, dto.prepaid);
   }
 
   @Roles(UserRole.ADMIN)

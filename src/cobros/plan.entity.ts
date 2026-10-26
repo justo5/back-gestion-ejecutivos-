@@ -21,4 +21,11 @@ export class Plan {
     },
   })
   price: number;
+
+  // Por defecto se cobra a mes vencido: el primer mes que se le cobra al
+  // cliente es el siguiente al alta (contactDay). Un plan por anticipado ya
+  // cobra el mes del alta. Cuenta el plan con el que arrancó el cliente (ver
+  // firstDueMonth en el front).
+  @Column({ default: false })
+  prepaid: boolean;
 }
